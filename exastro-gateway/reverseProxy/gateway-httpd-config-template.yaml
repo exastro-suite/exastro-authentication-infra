@@ -23,13 +23,19 @@ data:
       
       RewriteEngine On
       RewriteOptions inherit
-      ProxyPass        / http://{{ app_name }}.{{ app_namespace }}.svc:8000/
-      ProxyPassReverse / http://{{ app_name }}.{{ app_namespace }}.svc:8000/
       
       OIDCRedirectURI  http://{{ client_host }}:{{ client_port }}/oidc-redirect/
       OIDCClientID {{ client_id }}
       OIDCClientSecret {{ client_secret }}
       <Location />
+          ProxyPass        http://{{ app_ui_name }}.{{ app_namespace }}.svc:8000/
+          ProxyPassReverse http://{{ app_ui_name }}.{{ app_namespace }}.svc:8000/
+          AuthType openid-connect
+          Require valid-user
+      </Location>
+      <Location /api/>
+          ProxyPass        http://{{ app_api_name }}.{{ app_namespace }}.svc:8000/
+          ProxyPassReverse http://{{ app_api_name }}.{{ app_namespace }}.svc:8000/
           AuthType openid-connect
           Require valid-user
       </Location>
