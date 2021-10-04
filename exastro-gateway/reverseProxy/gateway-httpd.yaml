@@ -1,20 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: gateway-httpd
-  labels:
-    app: gateway-httpd
-  namespace: exastro-gateway
-spec:
-  ports:
-  - name: http
-    port: 31181
-    targetPort: 31181
-    nodePort: 31181
-  selector:
-    name: gateway-httpd
-  type: NodePort
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,3 +24,21 @@ spec:
         volumeMounts:
         - name: gateway-httpd-conf
           mountPath: /etc/httpd/conf.d/exastroSettings/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-httpd
+  labels:
+    app: gateway-httpd
+  namespace: exastro-gateway
+spec:
+  ports:
+  - name: http
+    port: 31181
+    targetPort: 31181
+    nodePort: 31181
+  selector:
+    name: gateway-httpd
+  type: NodePort
