@@ -20,7 +20,7 @@ spec:
           name: gateway-httpd-conf
       containers:
       - name: gateway-httpd
-        image: exastro/exastrogateway:test_1
+        image: exastro/exastro-gateway:0.0.1_20211004_1200
         volumeMounts:
         - name: gateway-httpd-conf
           mountPath: /etc/httpd/conf.d/exastroSettings/
