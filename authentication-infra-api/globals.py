@@ -11,7 +11,19 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: exastro-gateway
+
+from pytz import timezone
+
+config = None
+TZ = None
+logger = None
+
+def init(app):
+    global config
+    global TZ
+    global logger
+
+    config = app.config
+    TZ = timezone(config['TZ'])
+    logger = app.logger
+
