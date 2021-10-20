@@ -60,15 +60,18 @@ def post_client(realm):
 
     try:
         # パラメータ情報(JSON形式)
-        payload = json.loads(request.body)
+        payload = request.json.copy()
 
+        # *-*-*-*-*-*-*-*
+        #  keycloak 設定
+        # *-*-*-*-*-*-*-*
         client_namespace = payload["client_id"]
         client_redirect_protocol = payload["client_protocol"]
         client_redirect_host = payload["client_host"]
         client_redirect_port = payload["client_port"]
-        token_user = os.environ["KEYCLOAK_USER"]
-        token_password = os.environ["KEYCLOAK_PASSWORD"]
-        token_realm_name = os.environ["KEYCLOAK_MASTER_REALM"]
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
 
         # client作成&client mapper作成
         try:
@@ -78,13 +81,15 @@ def post_client(realm):
             globals.logger.debug(e.args)
             globals.logger.debug(traceback.format_exc())
 
-        # httpd 設定
+        # *-*-*-*-*-*-*-*
+        #  httpd 設定
+        # *-*-*-*-*-*-*-*
         template_file_path = os.environ["CONF_TEMPLATE_PATH"] + "/" + payload["conf_template"]
         conf_file_name = payload["client_id"] + ".conf"
         crypto_passphrase = os.environ["GATEWAY_CRYPTO_PASSPHRASE"]
-        auth_host = os.environ["KEYCLOAK_HOST"]
-        auth_protocol = os.environ["KEYCLOAK_PROTOCOL"]
-        auth_port = os.environ["KEYCLOAK_PORT"]
+        auth_host = os.environ["EXASTRO_KEYCLOAK_HOST"]
+        auth_protocol = os.environ["EXASTRO_KEYCLOAK_PROTOCOL"]
+        auth_port = os.environ["EXASTRO_KEYCLOAK_PORT"]
         client_host = payload["client_host"]
         client_protocol = payload["client_protocol"]
         client_port = payload["client_port"]
@@ -121,6 +126,36 @@ def post_client(realm):
 
         except Exception as e:
             globals.logger.debug(e.args)
+
+        # *-*-*-*-*-*-*-*
+        #  nodePort 設定
+        # *-*-*-*-*-*-*-*
+        client_id = payload["client_id"]
+        client_redirect_port = payload["client_port"]
+        svc_template_file_path = os.environ["NODEPORT_TEMPLATE_PATH"] + "/nodeport-template.yaml"
+        svc_file_name = "{}-svc.yaml".format(client_id)
+        namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
+        deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
+
+        try:
+            with tempfile.TemporaryDirectory() as tempdir:
+                svc_dest_path="{}/{}".format(tempdir, svc_file_name)
+
+                render_svc_template(
+                    svc_template_file_path,
+                    svc_dest_path,
+                    client_id,
+                    client_redirect_port,
+                    namespace,
+                    deploy_name
+                )
+
+                apply_svc_file(svc_dest_path)
+
+        except Exception as e:
+            globals.logger.debug(e.args)
+            globals.logger.debug(traceback.format_exc())
+            raise
 
         return jsonify({"result": "200"}), 200
 
@@ -204,7 +239,7 @@ def keycloak_client_create(realm_name, client_name, client_opt, token_user, toke
         globals.logger.debug('------------------------------------------------------')
 
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         header_para = {
             "Content-Type": "application/json",
@@ -284,7 +319,7 @@ def keycloak_client_mapping_create(realm_name, client_id, client_mapping_name, c
 
         globals.logger.debug("client mapping post送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
 
         # Client Mapping作成
@@ -324,7 +359,7 @@ def keycloak_client_secret_get(realm_name, client_id, token_user, token_password
         globals.logger.debug('------------------------------------------------------')
 
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         header_para = {
             "Content-Type": "application/json",
@@ -375,7 +410,7 @@ def get_user_token(user_name, password, realm_name):
         ]
 
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         request_response = requests.post("{}/auth/realms/{}/protocol/openid-connect/token".format(api_url, realm_name), headers=header_para, data="&".join(data_para))
         # 取得できない場合は、Exceptionを発行する
@@ -426,18 +461,18 @@ def generate_client_conf(template_file_path, conf_dest_path, realm, crypto_passp
         # 
         template = Template(template_text)
         conf_text = template.render(
-            conf_dest_path,
-            realm,
-            crypto_passphrase,
-            auth_host,
-            auth_protocol,
-            auth_port,
-            client_host,
-            client_protocol,
-            client_port,
-            client_id,
-            client_secret,
-            backend_url
+            conf_dest_path = conf_dest_path,
+            realm_name = realm,
+            crypto_passphrase = crypto_passphrase,
+            auth_host = auth_host,
+            auth_protocol = auth_protocol,
+            auth_port = auth_port,
+            client_host = client_host,
+            client_protocol = client_protocol,
+            client_port = client_port,
+            client_id = client_id,
+            client_secret = client_secret,
+            backend_url = backend_url
         )
 
         # ファイル出力
@@ -461,17 +496,103 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
         cm_namespace (str): configmap namespace
         conf_file_path (arr): configmapに含める設定ファイルのパス
     """
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL apply_configmap_files: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
+        globals.logger.debug('------------------------------------------------------')
+
+        # 登録済みのConfigMap定義を取得
+        cm_yaml = subprocess.check_output(["kubectl", "get", "cm", cm_name, "-n", cm_namespace, "-o", "yaml"], stderr=subprocess.STDOUT)
+
+        cm_yaml_dict = yaml.safe_load(cm_yaml.decode('utf-8'))
+
+        # 不要な要素の削除
+        if "annotations" in cm_yaml_dict["metadata"]:
+            del cm_yaml_dict["metadata"]["annotations"]
+
+        # 指定されたconfファイルを読み取り、そのファイル定義部分を差し替え
+        fp = open(conf_file_path, "r")
+        conf_text = fp.read()
+        fp.close()
+
+        cm_yaml_dict["data"][os.path.basename(conf_file_path)] = conf_text
+
+        # 差し替え後の定義情報をyaml化
+        cm_yaml_new = yaml.dump(cm_yaml_dict)
+
+        with tempfile.TemporaryDirectory() as tempdir, open(os.path.join(tempdir, "configmap.yaml"), "w") as configmap_yaml_fp:
+            configmap_yaml_path = configmap_yaml_fp.name
+
+            # ConfigMapのyaml定義ファイルの生成
+            configmap_yaml_fp.write(cm_yaml_new)
+            configmap_yaml_fp.close()
+
+            # ConfigMapのyaml定義の適用
+            result = subprocess.check_output(["kubectl", "apply", "-f", configmap_yaml_path], stderr=subprocess.STDOUT)
+            globals.logger.debug(result.decode('utf-8'))
+
+        globals.logger.debug("apply_configmap_files Succeed!")
+
+    except subprocess.CalledProcessError as e:
+        globals.logger.debug("ERROR: except subprocess.CalledProcessError")
+        globals.logger.debug("returncode:{}".format(e.returncode))
+        globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
+        raise
+
+def render_svc_template(template_path, svc_dest_path, client_id, port, namespace, deploy_name):
+    """render template
+
+    Args:
+        template_path (str): テンプレートファイルパス
+        client_id (str): KEYCLOAK Client
+        port (str): clientポート
+    """
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL render_svc_template: client_id:{}, port:{}'.format(client_id, port))
+        globals.logger.debug('------------------------------------------------------')
+
+        # ファイル読み込み
+        with open(template_path, 'r', encoding='UTF-8') as f:
+            template_text = f.read()
+
+        # 
+        template = Template(template_text)
+        svc_text = template.render(
+            client_id=client_id,
+            port=port,
+            targetPort=port,
+            nodePort=port,
+            namespace=namespace,
+            deploy_name=deploy_name
+        )
+
+        # ファイル出力
+        with open(svc_dest_path, 'w', encoding='UTF-8') as f:
+            f.write(svc_text)
+
+        globals.logger.debug("render_svc_template (client_id:{}) Succeed!".format(client_id))
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+def apply_svc_file(svc_files_path):
+    """service生成
+
+    Args:
+        svc_files_path (arr): service設定ファイルパス
+    """
 
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL apply_configmap_file: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
+        globals.logger.debug('CALL apply_svc_file: svc_files_path:{}'.format(svc_files_path))
         globals.logger.debug('------------------------------------------------------')
 
-        # configmapのyaml定義の適用
-        result = subprocess.check_output(["kubectl", "apply", "-f", conf_file_path], stderr=subprocess.STDOUT)
+        # Serviceのyaml定義の適用
+        result = subprocess.check_output(["kubectl", "apply", "-f", svc_files_path], stderr=subprocess.STDOUT)
         globals.logger.debug(result.decode('utf-8'))
-
-        globals.logger.debug("apply_configmap_file Succeed!")
 
     except subprocess.CalledProcessError as e:
         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
@@ -496,11 +617,11 @@ def apply_settings():
         try:
             # リバースプロキシサーバ再起動
             result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-            print(result.decode('utf-8'))
+            globals.logger.debug(result.decode('utf-8'))
         except subprocess.CalledProcessError as e:
-            print("ERROR: except subprocess.CalledProcessError")
-            print("returncode:{}".format(e.returncode))
-            print("output:\n{}\n".format(e.output.decode('utf-8')))
+            globals.logger.debug("ERROR: except subprocess.CalledProcessError")
+            globals.logger.debug("returncode:{}".format(e.returncode))
+            globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
             raise
 
         return jsonify({"result": "200"}), 200

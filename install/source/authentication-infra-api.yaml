@@ -44,6 +44,9 @@ spec:
       - name: gateway-conf-template
         configMap:
           name: gateway-conf-template
+      - name: nodeport-template
+        configMap:
+          name: nodeport-template
       containers:
       - name: authentication-infra-api
         image: exastro/authentication-infra-api:test_5
@@ -70,20 +73,28 @@ spec:
           value: ""
         - name: CONF_TEMPLATE_PATH
           value: "/app/exastro-authentication-infra/authentication-infra-conf-templates"
-        - name: KEYCLOAK_USER
+        - name: NODEPORT_TEMPLATE_PATH
+          value: "/app/exastro-authentication-infra/authentication-infra-nodeport-templates"
+        - name: EXASTRO_KEYCLOAK_USER
           value: "admin"
-        - name: KEYCLOAK_PASSWORD
+        - name: EXASTRO_KEYCLOAK_PASSWORD
           value: "admin"
-        - name: KEYCLOAK_MASTER_REALM
+        - name: EXASTRO_KEYCLOAK_MASTER_REALM
           value: "master"
         - name: GATEWAY_CRYPTO_PASSPHRASE
           value: ""
-        - name: KEYCLOAK_HOST
+        - name: EXASTRO_KEYCLOAK_HOST
           value: ""
-        - name: KEYCLOAK_PROTOCOL
+        - name: EXASTRO_KEYCLOAK_PROTOCOL
           value: "https"
-        - name: KEYCLOAK_PORT
+        - name: EXASTRO_KEYCLOAK_PORT
           value: "31182"
+        - name: API_KEYCLOAK_HOST
+          value: "keycloak.exastro-platform-authentication-infra.svc"
+        - name: API_KEYCLOAK_PROTOCOL
+          value: "http"
+        - name: API_KEYCLOAK_PORT
+          value: "8080"
         - name: GATEWAY_HTTPD_CONF_CM_NAME
           value: "gateway-httpd-conf"
         - name: EXASTRO_AUTHC_NAMESPACE
@@ -95,6 +106,8 @@ spec:
           mountPath: /etc/exastro-authentication-infra/authentication-infra-api
         - name: gateway-conf-template
           mountPath: /app/exastro-authentication-infra/authentication-infra-conf-templates
+        - name: nodeport-template
+          mountPath: /app/exastro-authentication-infra/authentication-infra-nodeport-templates
 
 ---
 
