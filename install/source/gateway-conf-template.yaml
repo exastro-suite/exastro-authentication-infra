@@ -55,4 +55,4 @@ kind: ConfigMap
 metadata:
   creationTimestamp: null
   name: gateway-conf-template
-  namespace: exastro-gateway
+  namespace: exastro-platform-authentication-infra
