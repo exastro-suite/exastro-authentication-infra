@@ -262,17 +262,42 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
         cm_namespace (str): configmap namespace
         conf_file_path (arr): configmapに含める設定ファイルのパス
     """
-
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL apply_configmap_file: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
+        globals.logger.debug('CALL apply_configmap_files: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
         globals.logger.debug('------------------------------------------------------')
 
-        # configmapのyaml定義の適用
-        result = subprocess.check_output(["kubectl", "apply", "-f", conf_file_path], stderr=subprocess.STDOUT)
-        globals.logger.debug(result.decode('utf-8'))
+        # 登録済みのConfigMap定義を取得
+        cm_yaml = subprocess.check_output(["kubectl", "get", "cm", cm_name, "-n", cm_namespace, "-o", "yaml"], stderr=subprocess.STDOUT)
 
-        globals.logger.debug("apply_configmap_file Succeed!")
+        cm_yaml_dict = yaml.safe_load(cm_yaml.decode('utf-8'))
+
+        # 不要な要素の削除
+        if "annotations" in cm_yaml_dict["metadata"]:
+            del cm_yaml_dict["metadata"]["annotations"]
+
+        # 指定されたconfファイルを読み取り、そのファイル定義部分を差し替え
+        fp = open(conf_file_path, "r")
+        conf_text = fp.read()
+        fp.close()
+
+        cm_yaml_dict["data"][os.path.basename(conf_file_path)] = conf_text
+
+        # 差し替え後の定義情報をyaml化
+        cm_yaml_new = yaml.dump(cm_yaml_dict)
+
+        with tempfile.TemporaryDirectory() as tempdir, open(os.path.join(tempdir, "configmap.yaml"), "w") as configmap_yaml_fp:
+            configmap_yaml_path = configmap_yaml_fp.name
+
+            # ConfigMapのyaml定義ファイルの生成
+            configmap_yaml_fp.write(cm_yaml_new)
+            configmap_yaml_fp.close()
+
+            # ConfigMapのyaml定義の適用
+            result = subprocess.check_output(["kubectl", "apply", "-f", configmap_yaml_path], stderr=subprocess.STDOUT)
+            globals.logger.debug(result.decode('utf-8'))
+
+        globals.logger.debug("apply_configmap_files Succeed!")
 
     except subprocess.CalledProcessError as e:
         globals.logger.debug("ERROR: except subprocess.CalledProcessError")

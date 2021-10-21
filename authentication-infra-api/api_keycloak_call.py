@@ -66,7 +66,7 @@ def keycloak_realm_create(realm_name, realm_opt, token_user, token_password, tok
 
         globals.logger.debug("realms post送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         globals.logger.debug(data_para)
 
@@ -116,7 +116,7 @@ def keycloak_realm_role_create(realm_name, realm_role_name, token_user, token_pa
 
         globals.logger.debug("realm_role post送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
 
         request_response = requests.post("{}/auth/admin/realms/{}/roles".format(api_url, realm_name), headers=header_para, data=json.dumps(data_para))
@@ -162,7 +162,7 @@ def keycloak_realm_role_get(realm_name, role_name, token_user, token_password, t
         }
         globals.logger.debug("role get送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
         request_response = requests.get("{}/auth/admin/realms/{}/roles/".format(api_url, realm_name), headers=header_para, data=data_para)
         globals.logger.debug(request_response.text)
@@ -213,7 +213,7 @@ def keycloak_group_create(realm_name, group_name, token_user, token_password, to
 
         globals.logger.debug("groups post送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
 
         request_response = requests.post("{}/auth/admin/realms/{}/groups/".format(api_url, realm_name), headers=header_para, data=json.dumps(data_para))
@@ -260,7 +260,7 @@ def keycloak_group_children_create(realm_name, parent_group_id, group_name, toke
         globals.logger.debug("groups children post送信")
 
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
 
         request_response = requests.post("{}/auth/admin/realms/{}/groups/{}/children".format(api_url, realm_name, parent_group_id), headers=header_para, data=json.dumps(data_para))
@@ -307,7 +307,7 @@ def keycloak_group_get(realm_name, group_name, token_user, token_password, token
         globals.logger.debug("groups get送信")
 
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
 
         request_response = requests.get("{}/auth/admin/realms/{}/groups".format(api_url, realm_name), headers=header_para, data=data_para)
@@ -411,7 +411,7 @@ def keycloak_group_add_role_mapping(realm_name, role_name, group_name, token_use
 
         globals.logger.debug("groups role-mappings post送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
         globals.logger.debug(data_para)
 
         request_response = requests.post("{}/auth/admin/realms/{}/groups/{}/role-mappings/realm".format(api_url, realm_name, group_info['id']), headers=header_para, data=json.dumps(data_para))
@@ -477,7 +477,7 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
 
         globals.logger.debug("user post送信")
         # 呼び出し先設定
-        api_url = "{}://{}:{}".format(os.environ['EXASTRO_KEYCLOAK_PROTOCOL'], os.environ['EXASTRO_KEYCLOAK_HOST'], os.environ['EXASTRO_KEYCLOAK_PORT'])
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         globals.logger.debug(data_para)
 
