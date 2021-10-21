@@ -111,7 +111,7 @@ def post_settings():
         # group作成(指定グループ数分処理)
         for group in groups:
             # 親グループがない場合は、TOPグループとして生成
-            if group["parent_group"] is None:
+            if len(group["parent_group"]) == 0:
                 try:
                     api_keycloak_call.keycloak_group_create(realm_name, group["group_name"], token_user, token_password, token_realm_name)
                 except Exception as e:
@@ -142,7 +142,7 @@ def post_settings():
 
         # client作成&client mapper作成
         try:
-            client_secret_id = client_create(realm, client_namespace, client_redirect_protocol, client_redirect_host, client_redirect_port, token_user, token_password, token_realm_name)
+            client_secret_id = api_keycloak_call.client_create(realm_name, client_namespace, client_redirect_protocol, client_redirect_host, client_redirect_port, token_user, token_password, token_realm_name)
 
         except Exception as e:
             globals.logger.debug(e.args)
@@ -157,8 +157,8 @@ def post_settings():
                 api_httpd_call.generate_system_conf(
                     template_file_path,
                     conf_dest_path,
-                    redirect_host,
-                    secret_id,
+                    client_redirect_host,
+                    client_secret_id,
                     crypto_passphrase,
                     client_redirect_port,
                     auth_port,
@@ -747,8 +747,9 @@ def apply_settings():
 
         try:
             # リバースプロキシサーバ再起動
-            result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-            globals.logger.debug(result.decode('utf-8'))
+            # result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
+            # globals.logger.debug(result.decode('utf-8'))
+            api_httpd_call.gateway_httpd_reload(namespace, deploy_name)
         except subprocess.CalledProcessError as e:
             globals.logger.debug("ERROR: except subprocess.CalledProcessError")
             globals.logger.debug("returncode:{}".format(e.returncode))

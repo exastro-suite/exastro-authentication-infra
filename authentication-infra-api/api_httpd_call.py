@@ -262,17 +262,42 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
         cm_namespace (str): configmap namespace
         conf_file_path (arr): configmapに含める設定ファイルのパス
     """
-
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL apply_configmap_file: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
+        globals.logger.debug('CALL apply_configmap_files: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
         globals.logger.debug('------------------------------------------------------')
 
-        # configmapのyaml定義の適用
-        result = subprocess.check_output(["kubectl", "apply", "-f", conf_file_path], stderr=subprocess.STDOUT)
-        globals.logger.debug(result.decode('utf-8'))
+        # 登録済みのConfigMap定義を取得
+        cm_yaml = subprocess.check_output(["kubectl", "get", "cm", cm_name, "-n", cm_namespace, "-o", "yaml"], stderr=subprocess.STDOUT)
 
-        globals.logger.debug("apply_configmap_file Succeed!")
+        cm_yaml_dict = yaml.safe_load(cm_yaml.decode('utf-8'))
+
+        # 不要な要素の削除
+        if "annotations" in cm_yaml_dict["metadata"]:
+            del cm_yaml_dict["metadata"]["annotations"]
+
+        # 指定されたconfファイルを読み取り、そのファイル定義部分を差し替え
+        fp = open(conf_file_path, "r")
+        conf_text = fp.read()
+        fp.close()
+
+        cm_yaml_dict["data"][os.path.basename(conf_file_path)] = conf_text
+
+        # 差し替え後の定義情報をyaml化
+        cm_yaml_new = yaml.dump(cm_yaml_dict)
+
+        with tempfile.TemporaryDirectory() as tempdir, open(os.path.join(tempdir, "configmap.yaml"), "w") as configmap_yaml_fp:
+            configmap_yaml_path = configmap_yaml_fp.name
+
+            # ConfigMapのyaml定義ファイルの生成
+            configmap_yaml_fp.write(cm_yaml_new)
+            configmap_yaml_fp.close()
+
+            # ConfigMapのyaml定義の適用
+            result = subprocess.check_output(["kubectl", "apply", "-f", configmap_yaml_path], stderr=subprocess.STDOUT)
+            globals.logger.debug(result.decode('utf-8'))
+
+        globals.logger.debug("apply_configmap_files Succeed!")
 
     except subprocess.CalledProcessError as e:
         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
@@ -280,16 +305,59 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
         raise
 
-def gateway_httpd_restart(namespace, deploy_name):
-    """Deployment Roll Restart
+# def gateway_httpd_restart(namespace, deploy_name):
+#     """Deployment Roll Restart
+
+#     Args:
+#         namespace (str): namespace
+#         deploy_name (str): deplyment name
+#     """
+#     try:
+#         result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
+#         print(result.decode('utf-8'))
+#     except subprocess.CalledProcessError as e:
+#         print("ERROR: except subprocess.CalledProcessError")
+#         print("returncode:{}".format(e.returncode))
+#         print("output:\n{}\n".format(e.output.decode('utf-8')))
+#         raise
+
+def gateway_httpd_reload(namespace, deploy_name):
+    """gateway-httpd graceful reload
 
     Args:
         namespace (str): namespace
-        deploy_name (str): deplyment name
+        selector_pod_name (str): selectorに渡すpod name
     """
+    #gateway-httpd graceful reload
     try:
-        result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-        print(result.decode('utf-8'))
+        print('------------------------------------------------------')
+        print('CALL gateway_httpd_reload: namespace:{}, deploy_name:{}'.format(namespace, deploy_name))
+        print('------------------------------------------------------')
+
+        # 処理対象のgateway-httpd POD一覧を取得する
+        target_pods_str = subprocess.check_output(["kubectl", "get", "pod", "-n", namespace, "-o", "json", "--selector=name=gateway-httpd"], stderr=subprocess.STDOUT)
+        target_pods = json.loads(target_pods_str)
+
+        # 処理対象のgateway-httpd PODを全て処理
+        for target_pod in target_pods["items"]:
+            if target_pod["status"]["phase"] == "Running":
+                # 実行中(Running)のPODを処理する
+
+                # confファイルを読み込み
+                print("[START]: httpd conf read :"+target_pod["metadata"]["name"])
+                result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
+                print(result.decode('utf-8'))
+
+                # httpd -k gracefulコマンドの実行
+                print("[START]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+                result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
+                print(result.decode('utf-8'))
+            else:
+                # 実行中じゃないPODはSKIP
+                print("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+
+        print("gateway_httpd_reload Succeed!")
+
     except subprocess.CalledProcessError as e:
         print("ERROR: except subprocess.CalledProcessError")
         print("returncode:{}".format(e.returncode))
