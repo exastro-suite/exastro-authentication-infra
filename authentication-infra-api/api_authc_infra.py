@@ -747,8 +747,9 @@ def apply_settings():
 
         try:
             # リバースプロキシサーバ再起動
-            result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-            globals.logger.debug(result.decode('utf-8'))
+            # result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
+            # globals.logger.debug(result.decode('utf-8'))
+            api_httpd_call.gateway_httpd_reload(namespace, deploy_name)
         except subprocess.CalledProcessError as e:
             globals.logger.debug("ERROR: except subprocess.CalledProcessError")
             globals.logger.debug("returncode:{}".format(e.returncode))

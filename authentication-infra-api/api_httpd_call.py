@@ -305,16 +305,59 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
         raise
 
-def gateway_httpd_restart(namespace, deploy_name):
-    """Deployment Roll Restart
+# def gateway_httpd_restart(namespace, deploy_name):
+#     """Deployment Roll Restart
+
+#     Args:
+#         namespace (str): namespace
+#         deploy_name (str): deplyment name
+#     """
+#     try:
+#         result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
+#         print(result.decode('utf-8'))
+#     except subprocess.CalledProcessError as e:
+#         print("ERROR: except subprocess.CalledProcessError")
+#         print("returncode:{}".format(e.returncode))
+#         print("output:\n{}\n".format(e.output.decode('utf-8')))
+#         raise
+
+def gateway_httpd_reload(namespace, deploy_name):
+    """gateway-httpd graceful reload
 
     Args:
         namespace (str): namespace
-        deploy_name (str): deplyment name
+        selector_pod_name (str): selectorに渡すpod name
     """
+    #gateway-httpd graceful reload
     try:
-        result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-        print(result.decode('utf-8'))
+        print('------------------------------------------------------')
+        print('CALL gateway_httpd_reload: namespace:{}, deploy_name:{}'.format(namespace, deploy_name))
+        print('------------------------------------------------------')
+
+        # 処理対象のgateway-httpd POD一覧を取得する
+        target_pods_str = subprocess.check_output(["kubectl", "get", "pod", "-n", namespace, "-o", "json", "--selector=name=gateway-httpd"], stderr=subprocess.STDOUT)
+        target_pods = json.loads(target_pods_str)
+
+        # 処理対象のgateway-httpd PODを全て処理
+        for target_pod in target_pods["items"]:
+            if target_pod["status"]["phase"] == "Running":
+                # 実行中(Running)のPODを処理する
+
+                # confファイルを読み込み
+                print("[START]: httpd conf read :"+target_pod["metadata"]["name"])
+                result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
+                print(result.decode('utf-8'))
+
+                # httpd -k gracefulコマンドの実行
+                print("[START]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+                result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
+                print(result.decode('utf-8'))
+            else:
+                # 実行中じゃないPODはSKIP
+                print("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+
+        print("gateway_httpd_reload Succeed!")
+
     except subprocess.CalledProcessError as e:
         print("ERROR: except subprocess.CalledProcessError")
         print("returncode:{}".format(e.returncode))
