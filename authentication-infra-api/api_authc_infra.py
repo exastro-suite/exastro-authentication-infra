@@ -168,7 +168,7 @@ def post_settings():
                 api_httpd_call.apply_configmap_file(cm_name, cm_namespace, conf_dest_path)
 
                 # httpd restart
-                api_httpd_call.gateway_httpd_restart(cm_namespace, deploy_name)
+                api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name)
         except Exception as e:
             globals.logger.debug(e.args)
 
