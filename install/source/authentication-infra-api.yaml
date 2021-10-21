@@ -119,7 +119,7 @@ metadata:
     name: authentication-infra-api
   namespace: exastro-platform-authentication-infra
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: http
     port: 8000
