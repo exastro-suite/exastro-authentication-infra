@@ -52,7 +52,11 @@ def alive():
 
 @app.route('/settings', methods=['POST'])
 def post_settings():
+    """初期設定
 
+    Returns:
+        Response: HTTP Respose
+    """
     try:
         globals.logger.debug('#' * 50)
         globals.logger.debug('CALL post_settings')
