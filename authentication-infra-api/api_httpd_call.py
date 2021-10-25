@@ -50,9 +50,9 @@ def generate_system_conf(template_path, conf_dest_path, hostname, client_secret,
         auth_port (str): keycloak port
     """
     try:
-        print('------------------------------------------------------')
-        print('CALL generate_system_conf: hostname:{}, host_port:{}, auth_port:{}'.format(hostname, host_port, auth_port))
-        print('------------------------------------------------------')
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL generate_system_conf: hostname:{}, host_port:{}, auth_port:{}'.format(hostname, host_port, auth_port))
+        globals.logger.debug('------------------------------------------------------')
 
         # ファイル読み込み
         f = open(template_path, 'r', encoding='UTF-8')
@@ -74,11 +74,11 @@ def generate_system_conf(template_path, conf_dest_path, hostname, client_secret,
         f.write(conf_text)
         f.close()
 
-        print("generate_system_conf Succeed!")
+        globals.logger.debug("generate_system_conf Succeed!")
 
     except Exception as e:
-        print(e.args)
-        print(traceback.format_exc())
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
         raise
 
 def generate_client_conf(template_file_path, conf_dest_path, realm, crypto_passphrase, auth_host, auth_protocol, auth_port,
@@ -314,11 +314,11 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
 #     """
 #     try:
 #         result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-#         print(result.decode('utf-8'))
+#         globals.logger.debug(result.decode('utf-8'))
 #     except subprocess.CalledProcessError as e:
-#         print("ERROR: except subprocess.CalledProcessError")
-#         print("returncode:{}".format(e.returncode))
-#         print("output:\n{}\n".format(e.output.decode('utf-8')))
+#         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
+#         globals.logger.debug("returncode:{}".format(e.returncode))
+#         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
 #         raise
 
 def gateway_httpd_reload(namespace, deploy_name):
@@ -330,9 +330,9 @@ def gateway_httpd_reload(namespace, deploy_name):
     """
     #gateway-httpd graceful reload
     try:
-        print('------------------------------------------------------')
-        print('CALL gateway_httpd_reload: namespace:{}, deploy_name:{}'.format(namespace, deploy_name))
-        print('------------------------------------------------------')
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL gateway_httpd_reload: namespace:{}, deploy_name:{}'.format(namespace, deploy_name))
+        globals.logger.debug('------------------------------------------------------')
 
         # 処理対象のgateway-httpd POD一覧を取得する
         target_pods_str = subprocess.check_output(["kubectl", "get", "pod", "-n", namespace, "-o", "json", "--selector=name=gateway-httpd"], stderr=subprocess.STDOUT)
@@ -344,22 +344,22 @@ def gateway_httpd_reload(namespace, deploy_name):
                 # 実行中(Running)のPODを処理する
 
                 # confファイルを読み込み
-                print("[START]: httpd conf read :"+target_pod["metadata"]["name"])
+                globals.logger.debug("[START]: httpd conf read :"+target_pod["metadata"]["name"])
                 result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
-                print(result.decode('utf-8'))
+                globals.logger.debug(result.decode('utf-8'))
 
                 # httpd -k gracefulコマンドの実行
-                print("[START]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+                globals.logger.debug("[START]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
                 result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
-                print(result.decode('utf-8'))
+                globals.logger.debug(result.decode('utf-8'))
             else:
                 # 実行中じゃないPODはSKIP
-                print("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+                globals.logger.debug("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
 
-        print("gateway_httpd_reload Succeed!")
+        globals.logger.debug("gateway_httpd_reload Succeed!")
 
     except subprocess.CalledProcessError as e:
-        print("ERROR: except subprocess.CalledProcessError")
-        print("returncode:{}".format(e.returncode))
-        print("output:\n{}\n".format(e.output.decode('utf-8')))
+        globals.logger.debug("ERROR: except subprocess.CalledProcessError")
+        globals.logger.debug("returncode:{}".format(e.returncode))
+        globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
         raise
