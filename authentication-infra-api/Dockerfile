@@ -32,8 +32,9 @@ RUN echo "RUN START"  \
 
 WORKDIR /app
 
-RUN echo "RUN START"  \
-&&  git clone -b main "https://github.com/exastro-suite/exastro-platform.git"
+RUN echo "RUN START"
 
-CMD ["python3", "/app/exastro-platform/authentication-infra-api/api_authc_infra.py"]
+COPY ./ /app/
+
+CMD ["python3", "/app/api_authc_infra.py"]
 
