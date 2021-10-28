@@ -321,7 +321,7 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
 #         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
 #         raise
 
-def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
+def gateway_httpd_reload(namespace, deploy_name):
     """gateway-httpd graceful reload
 
     Args:
@@ -346,11 +346,6 @@ def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
                     if target_pod_statuses["ready"] == True:
                         # ready状態のPODを処理する
 
-                        # confファイルの存在チェック
-                        globals.logger.debug("[START]: httpd conf exist check :" + target_pod["metadata"]["name"])
-                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e /etc/httpd/conf.d/exastroSettings/", conf_file_name], stderr=subprocess.STDOUT)
-                        globals.logger.debug(result.decode('utf-8'))
-
                         # confファイルを読み込み
                         globals.logger.debug("[START]: httpd conf read :" + target_pod["metadata"]["name"])
                         result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
@@ -362,7 +357,7 @@ def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
                         globals.logger.debug(result.decode('utf-8'))
                     else:
                         # ready状態じゃないPODはSKIP
-                        globals.logger.debug("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+                        globals.logger.debug("[SKIP]: httpd graceful restart pod :" + target_pod["metadata"]["name"])
             else:
                 # 実行中じゃないPODはSKIP
                 globals.logger.debug("[SKIP]: httpd graceful restart pod :" + target_pod["metadata"]["name"])
