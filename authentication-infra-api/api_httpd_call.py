@@ -349,10 +349,15 @@ def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
                     if target_pod_statuses["ready"] == True:
                         # ready状態のPODを処理する
 
-                        # confファイルが生成されるまで後続の処理をしない
-                        globals.logger.debug("[START]: httpd conf read :" + target_pod["metadata"]["name"])
-                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e", conf_file_path + conf_file_name + "d"], stderr=subprocess.STDOUT)
-                        globals.logger.debug(result.decode('utf-8'))
+                        file_check_result = 1
+                        while file_check_result == 0:
+                            # 3秒おきに確認
+                            time.sleep(3)
+                            
+                            # confファイルが生成されるまで後続の処理をしない
+                            globals.logger.debug("[START]: httpd conf exist check :" + target_pod["metadata"]["name"])
+                            file_check_result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e", conf_file_path + conf_file_name], stderr=subprocess.STDOUT)
+                            globals.logger.debug(file_check_result)
 
                         # confファイルを読み込み
                         globals.logger.debug("[START]: httpd conf read :" + target_pod["metadata"]["name"])
