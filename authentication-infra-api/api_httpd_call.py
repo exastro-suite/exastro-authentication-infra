@@ -343,7 +343,7 @@ def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
             if target_pod["status"]["phase"] == "Running":
                 # 実行中(Running)のPODを処理する
                 for target_pod_statuses in target_pod["status"]["containerStatuses"]:
-                    if target_pod_statuses["ready"] == "true":
+                    if target_pod_statuses["ready"] == True:
                         # ready状態のPODを処理する
 
                         # confファイルの存在チェック
@@ -363,7 +363,6 @@ def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
                     else:
                         # ready状態じゃないPODはSKIP
                         globals.logger.debug("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
-                        globals.logger.debug("pod status ready :" + target_pod_statuses["ready"])
             else:
                 # 実行中じゃないPODはSKIP
                 globals.logger.debug("[SKIP]: httpd graceful restart pod :" + target_pod["metadata"]["name"])
