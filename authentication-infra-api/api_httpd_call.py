@@ -321,7 +321,7 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
 #         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
 #         raise
 
-def gateway_httpd_reload(namespace, deploy_name):
+def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
     """gateway-httpd graceful reload
 
     Args:
@@ -342,16 +342,27 @@ def gateway_httpd_reload(namespace, deploy_name):
         for target_pod in target_pods["items"]:
             if target_pod["status"]["phase"] == "Running":
                 # 実行中(Running)のPODを処理する
+                for target_pod_statuses in target_pod["status"]["containerStatuses"]:
+                    if target_pod_statuses["ready"] == "true":
+                        # ready状態のPODを処理する
 
-                # confファイルを読み込み
-                globals.logger.debug("[START]: httpd conf read :"+target_pod["metadata"]["name"])
-                result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
-                globals.logger.debug(result.decode('utf-8'))
+                        # confファイルの存在チェック
+                        globals.logger.debug("[START]: httpd conf exist check :"+target_pod["metadata"]["name"])
+                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e /etc/httpd/conf.d/exastroSettings/", conf_file_name], stderr=subprocess.STDOUT)
+                        globals.logger.debug(result.decode('utf-8'))
 
-                # httpd -k gracefulコマンドの実行
-                globals.logger.debug("[START]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
-                result = subprocess.check_output(["kubectl", "exec", "-it", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
-                globals.logger.debug(result.decode('utf-8'))
+                        # confファイルを読み込み
+                        globals.logger.debug("[START]: httpd conf read :"+target_pod["metadata"]["name"])
+                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
+                        globals.logger.debug(result.decode('utf-8'))
+
+                        # httpd -k gracefulコマンドの実行
+                        globals.logger.debug("[START]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
+                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
+                        globals.logger.debug(result.decode('utf-8'))
+                    else:
+                        # ready状態じゃないPODはSKIP
+                        globals.logger.debug("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])        
             else:
                 # 実行中じゃないPODはSKIP
                 globals.logger.debug("[SKIP]: httpd graceful restart pod :"+target_pod["metadata"]["name"])
