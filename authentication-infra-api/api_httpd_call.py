@@ -321,18 +321,21 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
 #         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
 #         raise
 
-def gateway_httpd_reload(namespace, deploy_name):
+def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
     """gateway-httpd graceful reload
 
     Args:
         namespace (str): namespace
         selector_pod_name (str): selectorに渡すpod name
+        conf_file_name (str): configファイル名
     """
     #gateway-httpd graceful reload
     try:
         globals.logger.debug('------------------------------------------------------')
         globals.logger.debug('CALL gateway_httpd_reload: namespace:{}, deploy_name:{}'.format(namespace, deploy_name))
         globals.logger.debug('------------------------------------------------------')
+
+        conf_file_path = "/etc/httpd/conf.d/exastroSettings/"
 
         # 処理対象のgateway-httpd POD一覧を取得する
         target_pods_str = subprocess.check_output(["kubectl", "get", "pod", "-n", namespace, "-o", "json", "--selector=name=gateway-httpd"], stderr=subprocess.STDOUT)
@@ -346,9 +349,14 @@ def gateway_httpd_reload(namespace, deploy_name):
                     if target_pod_statuses["ready"] == True:
                         # ready状態のPODを処理する
 
+                        # confファイルが生成されるまで後続の処理をしない
+                        globals.logger.debug("[START]: httpd conf read :" + target_pod["metadata"]["name"])
+                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e", conf_file_path + conf_file_name + "d"], stderr=subprocess.STDOUT)
+                        globals.logger.debug(result.decode('utf-8'))
+
                         # confファイルを読み込み
                         globals.logger.debug("[START]: httpd conf read :" + target_pod["metadata"]["name"])
-                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
+                        result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat",  conf_file_path + "*.conf"], stderr=subprocess.STDOUT)
                         globals.logger.debug(result.decode('utf-8'))
 
                         # httpd -k gracefulコマンドの実行

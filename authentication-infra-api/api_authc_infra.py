@@ -172,7 +172,7 @@ def post_settings():
                 api_httpd_call.apply_configmap_file(cm_name, cm_namespace, conf_dest_path)
 
                 # httpd restart
-                api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name)
+                api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name, conf_file_name)
         except Exception as e:
             globals.logger.debug(e.args)
 
@@ -311,11 +311,19 @@ def apply_settings():
         namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
 
+        # パラメータ情報(JSON形式)
+        payload = request.json.copy()
+
+        # *-*-*-*-*-*-*-*
+        #  httpd 設定
+        # *-*-*-*-*-*-*-*
+        conf_file_name = payload["client_id"] + ".conf"
+
         try:
             # リバースプロキシサーバ再起動
             # result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
             # globals.logger.debug(result.decode('utf-8'))
-            api_httpd_call.gateway_httpd_reload(namespace, deploy_name)
+            api_httpd_call.gateway_httpd_reload(namespace, deploy_name, conf_file_name)
         except subprocess.CalledProcessError as e:
             globals.logger.debug("ERROR: except subprocess.CalledProcessError")
             globals.logger.debug("returncode:{}".format(e.returncode))
