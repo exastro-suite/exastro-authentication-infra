@@ -355,9 +355,9 @@ def gateway_httpd_reload(namespace, deploy_name, conf_file_name):
                             globals.logger.debug("[START]: httpd conf exist check :" + target_pod["metadata"]["name"])
                             
                             # 生成したconfファイルが存在する場合はTrue、存在しない場合はFalseを返す
-                            file_check_result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e /etc/httpd/conf.d/exastroSettings/" + conf_file_name + "&& echo True || echo False"], stderr=subprocess.STDOUT)
+                            file_check_result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e /etc/httpd/conf.d/exastroSettings/" + conf_file_name + "&& echo 1 || echo 0"], stderr=subprocess.STDOUT)
 
-                            if file_check_result:
+                            if file_check_result == 1:
                                 globals.logger.debug("conf file created")
                                 globals.logger.debug(file_check_result.decode('utf-8'))
                                 break
