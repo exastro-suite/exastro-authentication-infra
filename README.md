@@ -1,3 +1,3 @@
-# exastro-platform
+# exastro-authentication-infra
 
-- exastro-gateway
+- authentication-infra-api
