@@ -374,7 +374,7 @@ def sub_group_found(search_group_name, group_info):
 
 
 def keycloak_group_add_role_mapping(realm_name, role_name, group_name, token_user, token_password, token_realm):
-    """グループロールマッピング
+    """グループロールマッピング作成
     Args:
         realm_name (str): realm name
         group_name (str): group name
@@ -421,6 +421,51 @@ def keycloak_group_add_role_mapping(realm_name, role_name, group_name, token_use
         if request_response.status_code != 204:
             raise Exception("group role-mappings create error status:{}, response:{}".format(request_response.status_code, request_response.text))
         globals.logger.debug("group role-mappings add Succeed!")
+
+        # 正常応答
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+def keycloak_default_group_setting(realm_name, default_group_name, token_user, token_password, token_realm):
+    """デフォルトグループ設定
+    Args:
+        realm_name (str): realm name
+        default_group_name (str): default_group_name
+        token_user (str): token user name
+        token_password (str): token user password
+        token_realm (str): token realm name
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_default_group_setting: default_group_name:{}'.format(default_group_name))
+        globals.logger.debug('------------------------------------------------------')
+
+        # group id情報取得
+        group_info = keycloak_group_get(realm_name, default_group_name, token_user, token_password, token_realm)
+        globals.logger.debug(group_info)
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm)),
+        }
+
+        globals.logger.debug("default groups put送信")
+        # 呼び出し先設定
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+        request_response = requests.put("{}/auth/admin/realms/{}/default-groups/{}".format(api_url, realm_name, group_info['id']), headers=header_para)
+        globals.logger.debug(request_response.text)
+
+        # 取得できない場合は、Exceptionを発行する
+        if request_response.status_code != 204:
+            raise Exception("default groups setting error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        globals.logger.debug("default groups setting Succeed!")
 
         # 正常応答
         return request_response.text

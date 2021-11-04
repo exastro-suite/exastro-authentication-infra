@@ -73,6 +73,7 @@ def post_settings():
         realm_roles = payload["realm_roles"]
         groups = payload["groups"]
         group_mappings = payload["group_mappings"]
+        default_group_name = payload["default_group_name"]
         users = payload["users"]
 
         client_namespace = payload["client_id"]
@@ -136,6 +137,12 @@ def post_settings():
                 api_keycloak_call.keycloak_group_add_role_mapping(realm_name, mappings["role_name"], mappings["group_name"], token_user, token_password, token_realm_name)
             except Exception as e:
                 globals.logger.debug(e.args)
+
+        # default group設定
+        try:
+            api_keycloak_call.keycloak_default_group_setting(realm_name, default_group_name, token_user, token_password, token_realm_name)
+        except Exception as e:
+            globals.logger.debug(e.args)
 
         # user作成(指定ユーザー数分処理)
         for user in users:
