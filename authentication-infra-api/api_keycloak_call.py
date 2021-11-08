@@ -27,6 +27,7 @@ from datetime import timedelta, timezone
 
 import globals
 
+
 # 設定ファイル読み込み・globals初期化
 app = Flask(__name__)
 app.config.from_envvar('CONFIG_API_AUTHC_INFRA_PATH')
@@ -347,6 +348,7 @@ def sub_group_found(search_group_name, group_info):
         dict: 見つかった際はgroup群、見つからない場合はNone
     """
 
+
     try:
         ret_group_info = None
 
@@ -535,6 +537,72 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
             raise Exception("user_create error status:{}, response:{}".format(request_response.status_code, request_response.text))
 
         globals.logger.debug("user create Succeed!")
+
+        # 正常応答
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+def keycloak_admin_user_role_mapping_create(realm_name, role_name, user_name, token_user, token_password, token_realm_name):
+    """管理者ユーザ ロールマッピング作成
+
+    Args:
+        realm_name (str): realm name
+        role_name (str): role name
+        user_name (str): user name
+        toekn_user (str): token 取得用 user name
+        toekn_password (str): token 取得用 user password
+        toekn_realm_name (str): token 取得用 realm name
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_admin_user_role_mapping_create: realm_name:{}, role_name:{}, user_name:{}'.format(realm_name, role_name, user_name))
+        globals.logger.debug('------------------------------------------------------')
+
+        # role情報取得
+        role_info = keycloak_realm_role_get(realm_name, role_name, token_user, token_password, token_realm_name)
+        globals.logger.debug(role_info)
+
+        # user情報取得
+        user_info = keycloak_user_get(realm_name, user_name, token_user, token_password, token_realm_name)
+        globals.logger.debug(user_info)
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
+        }
+
+        data_para = [{
+            "id": role_info["id"],
+            "name": role_info["name"]
+            # "description": role_info["description"],
+            # "composite": role_info["composite"],
+            # "clientRole": role_info["clientRole"],
+            # "containerId": role_info["containerId"]
+        }]
+
+        globals.logger.debug("admin user role mapping post送信")
+        # 呼び出し先設定
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        globals.logger.debug(data_para)
+
+        globals.logger.debug("user_id:{}".format(user_info["id"]))
+        request_response = requests.post("{}/auth/admin/realms/{}/users/{}/role-mappings/realm".format(api_url, realm_name, user_info["id"]), headers=header_para, data=json.dumps(data_para))
+        globals.logger.debug(request_response.text)
+
+        # 取得できない場合は、Exceptionを発行する
+        if request_response.status_code != 204:
+            raise Exception("admin_user_role_mapping_create error status:{}, response:{}".format(request_response.status_code, request_response.text))
+
+        globals.logger.debug("admin user role mapping create Succeed!")
 
         # 正常応答
         return request_response.text
@@ -766,6 +834,49 @@ def keycloak_client_secret_get(realm_name, client_id, token_user, token_password
         globals.logger.debug(traceback.format_exc())
         raise
 
+def keycloak_user_get(realm_name, user_name, token_user, token_password, token_realm_name):
+    """ユーザ情報取得
+    Args:
+        realm_name (str): realm name
+        user_name (str): user name
+        toekn_user (str): token 取得用 user name
+        toekn_password (str): token 取得用 user password
+        toekn_realm_name (str): token 取得用 realm name
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_user_get: realm_name:{}, user_name:{}'.format(realm_name, user_name))
+        globals.logger.debug('------------------------------------------------------')
+
+        # 呼び出し先設定
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
+        }
+
+        globals.logger.debug("user get")
+        # ユーザ情報取得
+        request_response = requests.get("{}/auth/admin/realms/{}/users?search={}".format(api_url, realm_name, user_name), headers=header_para)
+        globals.logger.debug(request_response.text)
+        
+        # 取得できない場合は、Exceptionを発行する
+        if request_response.status_code != 200:
+            raise Exception("user_get error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        globals.logger.debug("user get Succeed!")
+        
+        user_info = json.loads(request_response.text)
+        # 正常応答
+        return user_info[0]
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
 
 def get_user_token(user_name, password, realm_name):
     """user token取得
