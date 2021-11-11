@@ -635,7 +635,10 @@ def client_create(realm_name, namespace, redirect_protocol, redirect_host, redir
             client_opt = {
                 "protocol": "openid-connect",
                 "publicClient": False,
-                "redirectUris": ["{}://{}:{}/oidc-redirect/".format(redirect_protocol, redirect_host, redirect_port)],
+                "redirectUris": [
+                    "{}://{}:{}/oidc-redirect/".format(redirect_protocol, redirect_host, redirect_port),
+                    "{}://{}:{}/".format(redirect_protocol, redirect_host, redirect_port)
+                ],
                 "baseUrl": "{}://{}:{}/".format(redirect_protocol, redirect_host, redirect_port),
                 "webOrigins": [],
             }
