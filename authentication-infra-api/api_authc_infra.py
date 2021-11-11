@@ -73,7 +73,9 @@ def post_settings():
         realm_roles = payload["realm_roles"]
         groups = payload["groups"]
         group_mappings = payload["group_mappings"]
+        default_group_name = payload["default_group_name"]
         users = payload["users"]
+        admin_users = payload["admin_users"]
 
         client_namespace = payload["client_id"]
         client_redirect_protocol = payload["client_protocol"]
@@ -137,10 +139,25 @@ def post_settings():
             except Exception as e:
                 globals.logger.debug(e.args)
 
+        # default group設定
+        try:
+            api_keycloak_call.keycloak_default_group_setting(realm_name, default_group_name, token_user, token_password, token_realm_name)
+        except Exception as e:
+            globals.logger.debug(e.args)
+
         # user作成(指定ユーザー数分処理)
         for user in users:
             try:
                 api_keycloak_call.keycloak_user_create(realm_name, user["user_name"], user["user_password"], user["user_groups"], user["user_realm_roles"], user["user_option"], token_user, token_password, token_realm_name)
+            except Exception as e:
+                globals.logger.debug(e.args)
+
+        # admin user作成(指定ユーザー数分処理)
+        for admin_user in admin_users:
+            try:
+                api_keycloak_call.keycloak_user_create("master", admin_user["user_name"], admin_user["user_password"], admin_user["user_groups"], admin_user["user_realm_roles"], admin_user["user_option"], token_user, token_password, token_realm_name)
+                # admin user role mapping作成
+                api_keycloak_call.keycloak_admin_user_role_mapping_create("master", "admin", admin_user["user_name"], token_user, token_password, token_realm_name)
             except Exception as e:
                 globals.logger.debug(e.args)
 
