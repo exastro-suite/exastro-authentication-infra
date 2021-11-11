@@ -350,5 +350,54 @@ def apply_settings():
         return common.serverError(e)
 
 
+@app.route('/user/current', methods=['GET'])
+def curret_user_get():
+    """カレントユーザ情報取得
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL curret_user_get')
+        globals.logger.debug('#' * 50)
+
+        ret_json = {
+            "id": "48f21087-2714-4166-89bf-43012c6c0001",
+            "username": "epoch-taro",
+            "enabled": True,
+            "firstName": "taro",
+            "lastName": "epoch",
+            "email": "taro-epoch@example.com",
+        }
+
+        return jsonify({"result": "200", "info": json.dumps(ret_json)}), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
+
+@app.route('/user/current/password', methods=['PUT'])
+def curret_user_password_change():
+    """カレントユーザパスワード変更
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL curret_user_password_change')
+        globals.logger.debug('#' * 50)
+
+        # パラメータ情報(JSON形式)
+        payload = request.json.copy()
+
+        globals.logger.debug('in_data:{}'.format(payload))
+
+        return jsonify({"result": "200"}), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('API_AUTHC_INFRA_PORT', '8000')), threaded=True)
