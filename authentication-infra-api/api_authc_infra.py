@@ -431,9 +431,12 @@ def curret_user_password_change():
         # client_secretの取得
         client_secret = api_keycloak_call.keycloak_client_secret_get(realm_name, client_name, token_user, token_password, token_realm_name)
 
-        # 現行パスワードが一致しているかチェック
-        token = api_keycloak_call.keycloak_client_user_get_token(realm_name, client_name, client_secret, user_info["username"], cuurent_password)
-        # errorがあった場合はexceptionで復帰しているのでそのまま処理
+        try:
+            # 現行パスワードが一致しているかチェック
+            token = api_keycloak_call.keycloak_client_user_get_token(realm_name, client_name, client_secret, user_info["username"], cuurent_password)
+        except api_keycloak_call.AuthErrorxception as e:
+            # 認証があった場合は401で戻る
+            return jsonify({"result": "401"}), 401
 
         # パスワード変更
         api_keycloak_call.keycloak_user_reset_password(realm_name, user_id, new_password, token_user, token_password, token_realm_name)
