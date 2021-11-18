@@ -532,5 +532,29 @@ def get_current_client_name(header):
         raise
 
 
+@app.route('/client/<string:client_id>/port', methods=['GET'])
+def get_client_port(client_id):
+    """client port情報取得
+
+    Args:
+        client_id (str): client id
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        ret = {
+            "result": "200",
+            "baseUrl": "https://localhost:30443/",
+            "enabled": True,
+        }
+
+        return jsonify(ret), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('API_AUTHC_INFRA_PORT', '8000')), threaded=True)
