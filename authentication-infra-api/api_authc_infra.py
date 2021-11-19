@@ -532,7 +532,7 @@ def get_current_client_name(header):
         raise
 
 
-@app.route('/client/<string:client_id>/port', methods=['GET'])
+@app.route('/client/<string:client_id>', methods=['GET'])
 def get_client_port(client_id):
     """client port情報取得
 
