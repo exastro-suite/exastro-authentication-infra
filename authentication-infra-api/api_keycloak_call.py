@@ -27,7 +27,7 @@ from datetime import timedelta, timezone
 
 import globals
 
-class AuthErrorxception(Exception):
+class AuthErrorException(Exception):
     pass
 
 # 設定ファイル読み込み・globals初期化
@@ -1027,7 +1027,7 @@ def keycloak_client_user_get_token(realm_name, client_id, client_secret, user_id
         request_response = requests.post("{}/auth/realms/{}/protocol/openid-connect/token".format(api_url, realm_name), headers=header_para, data="&".join(data_para))
         # 取得できない場合は、Exceptionを発行する
         if request_response.status_code != 200:
-            raise AuthErrorxception("client_user_get_token error status:{}, response:{}".format(request_response.status_code, request_response.text))
+            raise AuthErrorException("client_user_get_token error status:{}, response:{}".format(request_response.status_code, request_response.text))
 
         globals.logger.debug("get token Succeed!")
 

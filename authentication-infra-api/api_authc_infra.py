@@ -434,7 +434,7 @@ def curret_user_password_change():
         try:
             # 現行パスワードが一致しているかチェック
             token = api_keycloak_call.keycloak_client_user_get_token(realm_name, client_name, client_secret, user_info["username"], cuurent_password)
-        except api_keycloak_call.AuthErrorxception as e:
+        except api_keycloak_call.AuthErrorException as e:
             # 認証があった場合は401で戻る
             return jsonify({"result": "401"}), 401
 
