@@ -839,6 +839,48 @@ def keycloak_client_secret_get(realm_name, client_id, token_user, token_password
         globals.logger.debug(traceback.format_exc())
         raise
 
+def keycloak_client_get(realm_name, client_id, token_user, token_password, token_realm_name):
+    """client情報取得
+    Args:
+        realm_name (str): realm name
+        client_id (str): client id
+        toekn_user (str): token 取得用 user name
+        toekn_password (str): token 取得用 user password
+        toekn_realm_name (str): token 取得用 realm name
+    Returns:
+        str: secret id
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_client_get: id_of_client:{}'.format(client_id))
+        globals.logger.debug('------------------------------------------------------')
+
+        # 呼び出し先設定
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
+        }
+
+        globals.logger.debug("client get")
+
+        # Client情報取得
+        request_response = requests.get("{}/auth/admin/realms/{}/clients/{}".format(api_url, realm_name, client_id), headers=header_para)
+        globals.logger.debug(request_response.text)
+        
+        # 取得できない場合は、Exceptionを発行する
+        if request_response.status_code != 200:
+            raise Exception("client_get error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        globals.logger.debug("client get Succeed!")
+        
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
 
 def keycloak_user_get(realm_name, user_name, token_user, token_password, token_realm_name):
     """ユーザ情報取得

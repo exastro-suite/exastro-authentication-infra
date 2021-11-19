@@ -507,7 +507,7 @@ def get_current_realm(header):
         raise
 
 def get_current_client_name(header):
-    """ログインユーザのclent name取得
+    """ログインユーザのclient name取得
 
     Args:
         header (dict): request header情報
@@ -544,9 +544,24 @@ def get_client_port(client_id):
     """
 
     try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_realm_create: client_id:{}'.format(client_id))
+        globals.logger.debug('------------------------------------------------------')
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # realm nameの取得
+        realm_name = get_current_realm(request.headers)
+
+        # client情報取得
+        response = api_keycloak_call.keycloak_client_get(realm_name, client_id, token_user, token_password, token_realm_name)
+        json_ret = json.loads(response.text)
+
         ret = {
             "result": "200",
-            "baseUrl": "https://localhost:30443/",
+            "baseUrl": json_ret["baseUrl"],
             "enabled": True,
         }
 
