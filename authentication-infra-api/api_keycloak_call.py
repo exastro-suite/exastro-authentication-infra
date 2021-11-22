@@ -868,14 +868,15 @@ def keycloak_client_get(realm_name, client_id, token_user, token_password, token
 
         # Client情報取得
         request_response = requests.get("{}/auth/admin/realms/{}/clients/{}".format(api_url, realm_name, client_id), headers=header_para)
-        globals.logger.debug(request_response.text)
         
         # 取得できない場合は、Exceptionを発行する
         if request_response.status_code != 200:
-            raise Exception("client_get error status:{}, response:{}".format(request_response.status_code, request_response.text))
-        globals.logger.debug("client get Succeed!")
+            globals.logger.debug("client get error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        else:
+            globals.logger.debug(request_response.text)
+            globals.logger.debug("client get Succeed!")
         
-        return request_response.text
+        return request_response.text        
 
     except Exception as e:
         globals.logger.debug(e.args)

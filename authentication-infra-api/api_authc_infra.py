@@ -544,9 +544,9 @@ def get_client_port(client_id):
     """
 
     try:
-        globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL keycloak_realm_create: client_id:{}'.format(client_id))
-        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL get_client_port')
+        globals.logger.debug('#' * 50)
 
         token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
@@ -558,6 +558,10 @@ def get_client_port(client_id):
         # client情報取得
         response = api_keycloak_call.keycloak_client_get(realm_name, client_id, token_user, token_password, token_realm_name)
         json_ret = json.loads(response)
+
+        if "error" in json_ret:
+            # client情報取得で"error"のレスポンスが返ってきた場合は、404:NotFound のエラーを返す
+            return jsonify(json_ret), 404
 
         ret = {
             "result": "200",
