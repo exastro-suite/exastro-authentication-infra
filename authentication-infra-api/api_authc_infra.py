@@ -557,7 +557,7 @@ def get_client_port(client_id):
 
         # client情報取得
         response = api_keycloak_call.keycloak_client_get(realm_name, client_id, token_user, token_password, token_realm_name)
-        json_ret = json.loads(response.text)
+        json_ret = json.loads(response)
 
         ret = {
             "result": "200",
