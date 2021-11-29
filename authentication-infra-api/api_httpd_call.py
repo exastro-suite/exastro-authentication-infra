@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import Awaitable
 from flask import Flask, request, abort, jsonify, render_template
 from datetime import datetime
 import os
@@ -192,66 +193,169 @@ def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
         raise
 
-def render_svc_template(template_path, svc_dest_path, client_id, port, namespace, deploy_name):
-    """render template
+def create_nodeport(template_path, client_id, gw_namespace, gw_deploy_name):
+    """NodePort生成
 
     Args:
-        template_path (str): テンプレートファイルパス
-        client_id (str): KEYCLOAK Client
-        port (str): clientポート
-    """
-    try:
-        globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL render_svc_template: client_id:{}, port:{}'.format(client_id, port))
-        globals.logger.debug('------------------------------------------------------')
+        template_path (str): Serviceのyamlテンプレートファイルのパス
+        client_id (str): Client id
+        gw_namespace (str): Gatewayのnamespace
+        gw_deploy_name (str): GetewayのDeploy名
 
-        # ファイル読み込み
+    Returns:
+        int: NodePort番号
+    """
+    globals.logger.debug('------------------------------------------------------')
+    globals.logger.debug('CALL create_nodeport: client_id:{}'.format(client_id))
+    globals.logger.debug('------------------------------------------------------')
+
+    client_port = 0
+
+    try:
+        #
+        # 割り当てられたNodePortを取得（既に作成済みの場合は同じ番号を使う）
+        # 
+        globals.logger.debug("get service:")
+        result = subprocess.check_output(["kubectl", "get", "svc", client_id, "-n", gw_namespace, "-o", "json"], stderr=subprocess.STDOUT)
+        dic_result = json.loads(result.decode('utf-8'))
+        client_port = dic_result["spec"]["ports"][0]["nodePort"]
+        globals.logger.debug("get service client_port:{}".format(client_port))
+
+    except subprocess.CalledProcessError as e:
+        # Serviceが存在しない
+        pass
+
+    try:
+        #
+        # Serviceのyamlテンプレートの読み込み
+        #
         with open(template_path, 'r', encoding='UTF-8') as f:
             template_text = f.read()
 
-        # 
         template = Template(template_text)
-        svc_text = template.render(
-            client_id=client_id,
-            port=port,
-            targetPort=port,
-            nodePort=port,
-            namespace=namespace,
-            deploy_name=deploy_name
-        )
 
-        # ファイル出力
-        with open(svc_dest_path, 'w', encoding='UTF-8') as f:
-            f.write(svc_text)
+        #
+        # 仮生成(NodePortを確定させる)
+        #
+        with tempfile.TemporaryDirectory() as tempdir:
 
-        globals.logger.debug("render_svc_template (client_id:{}) Succeed!".format(client_id))
+            # NodePortを確定するために8000番で仮生成
+            svc_text = template.render(
+                client_id=client_id,
+                port=8000,
+                targetPort=8000,
+                nodePort=client_port,
+                namespace=gw_namespace,
+                deploy_name=gw_deploy_name
+            )
+            fp = open(os.path.join(tempdir, "svc.yaml"), "w")
+            fp.write(svc_text)
+            fp.close()
 
-    except Exception as e:
-        globals.logger.debug(e.args)
-        globals.logger.debug(traceback.format_exc())
-        raise
+            # Serviceの適用
+            globals.logger.debug("apply service (provisional):")
+            result = subprocess.check_output(["kubectl", "apply", "-f", fp.name], stderr=subprocess.STDOUT)
+            globals.logger.debug("\n"+result.decode('utf-8'))
 
-def apply_svc_file(svc_files_path):
-    """service生成
+        #
+        # 割り当てられたNodePortを取得
+        # 
+        globals.logger.debug("get service:")
+        result = subprocess.check_output(["kubectl", "get", "svc", client_id, "-n", gw_namespace, "-o", "json"], stderr=subprocess.STDOUT)
+        dic_result = json.loads(result.decode('utf-8'))
+        client_port = dic_result["spec"]["ports"][0]["nodePort"]
+        globals.logger.debug("get service client_port:{}".format(client_port))
 
-    Args:
-        svc_files_path (arr): service設定ファイルパス
-    """
+        #
+        # 決定したPortでServiceを更新
+        #
+        with tempfile.TemporaryDirectory() as tempdir, open(os.path.join(tempdir, "svc.yaml"), "w") as fp:
+            svc_text = template.render(
+                client_id=client_id,
+                port=8000,
+                targetPort=client_port,
+                nodePort=client_port,
+                namespace=gw_namespace,
+                deploy_name=gw_deploy_name
+            )
+            fp = open(os.path.join(tempdir, "svc.yaml"), "w")
+            fp.write(svc_text)
+            fp.close()
 
-    try:
-        globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL apply_svc_file: svc_files_path:{}'.format(svc_files_path))
-        globals.logger.debug('------------------------------------------------------')
+            # Serviceの適用
+            globals.logger.debug("apply service:")
+            result = subprocess.check_output(["kubectl", "apply", "-f", fp.name], stderr=subprocess.STDOUT)
+            globals.logger.debug("\n"+result.decode('utf-8'))
 
-        # Serviceのyaml定義の適用
-        result = subprocess.check_output(["kubectl", "apply", "-f", svc_files_path], stderr=subprocess.STDOUT)
-        globals.logger.debug(result.decode('utf-8'))
+        return client_port
 
     except subprocess.CalledProcessError as e:
         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
         globals.logger.debug("returncode:{}".format(e.returncode))
         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
         raise
+
+
+# def render_svc_template(template_path, svc_dest_path, client_id, port, namespace, deploy_name):
+#     """render template
+
+#     Args:
+#         template_path (str): テンプレートファイルパス
+#         client_id (str): KEYCLOAK Client
+#         port (str): clientポート
+#     """
+#     try:
+#         globals.logger.debug('------------------------------------------------------')
+#         globals.logger.debug('CALL render_svc_template: client_id:{}, port:{}'.format(client_id, port))
+#         globals.logger.debug('------------------------------------------------------')
+
+#         # ファイル読み込み
+#         with open(template_path, 'r', encoding='UTF-8') as f:
+#             template_text = f.read()
+
+#         # 
+#         template = Template(template_text)
+#         svc_text = template.render(
+#             client_id=client_id,
+#             port=port,
+#             targetPort=port,
+#             nodePort=port,
+#             namespace=namespace,
+#             deploy_name=deploy_name
+#         )
+
+#         # ファイル出力
+#         with open(svc_dest_path, 'w', encoding='UTF-8') as f:
+#             f.write(svc_text)
+
+#         globals.logger.debug("render_svc_template (client_id:{}) Succeed!".format(client_id))
+
+#     except Exception as e:
+#         globals.logger.debug(e.args)
+#         globals.logger.debug(traceback.format_exc())
+#         raise
+
+# def apply_svc_file(svc_files_path):
+#     """service生成
+
+#     Args:
+#         svc_files_path (arr): service設定ファイルパス
+#     """
+
+#     try:
+#         globals.logger.debug('------------------------------------------------------')
+#         globals.logger.debug('CALL apply_svc_file: svc_files_path:{}'.format(svc_files_path))
+#         globals.logger.debug('------------------------------------------------------')
+
+#         # Serviceのyaml定義の適用
+#         result = subprocess.check_output(["kubectl", "apply", "-f", svc_files_path], stderr=subprocess.STDOUT)
+#         globals.logger.debug(result.decode('utf-8'))
+
+#     except subprocess.CalledProcessError as e:
+#         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
+#         globals.logger.debug("returncode:{}".format(e.returncode))
+#         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
+#         raise
 
 
 def apply_configmap_file(cm_name, cm_namespace, conf_file_path):

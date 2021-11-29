@@ -215,19 +215,27 @@ def post_client(realm):
         payload = request.json.copy()
 
         # *-*-*-*-*-*-*-*
+        #  Port 割り当て
+        # *-*-*-*-*-*-*-*
+        template_path = os.environ["NODEPORT_TEMPLATE_PATH"] + "/nodeport-template.yaml"
+        client_id = payload["client_id"]
+        gw_namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
+        gw_deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
+        client_port = api_httpd_call.create_nodeport(template_path, client_id, gw_namespace, gw_deploy_name)
+
+        # *-*-*-*-*-*-*-*
         #  keycloak 設定
         # *-*-*-*-*-*-*-*
         client_namespace = payload["client_id"]
         client_redirect_protocol = payload["client_protocol"]
         client_redirect_host = payload["client_host"]
-        client_redirect_port = payload["client_port"]
         token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
         token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
 
         # client作成&client mapper作成
         try:
-            client_secret_id = api_keycloak_call.client_create(realm, client_namespace, client_redirect_protocol, client_redirect_host, client_redirect_port, token_user, token_password, token_realm_name)
+            client_secret_id = api_keycloak_call.client_create(realm, client_namespace, client_redirect_protocol, client_redirect_host, client_port, token_user, token_password, token_realm_name)
 
         except Exception as e:
             globals.logger.debug(e.args)
@@ -244,7 +252,6 @@ def post_client(realm):
         auth_port = os.environ["EXASTRO_KEYCLOAK_PORT"]
         client_host = payload["client_host"]
         client_protocol = payload["client_protocol"]
-        client_port = payload["client_port"]
         client_id = payload["client_id"]
         client_secret = client_secret_id
         backend_url = payload["backend_url"]
@@ -278,36 +285,6 @@ def post_client(realm):
 
         except Exception as e:
             globals.logger.debug(e.args)
-
-        # *-*-*-*-*-*-*-*
-        #  nodePort 設定
-        # *-*-*-*-*-*-*-*
-        client_id = payload["client_id"]
-        client_redirect_port = payload["client_port"]
-        svc_template_file_path = os.environ["NODEPORT_TEMPLATE_PATH"] + "/nodeport-template.yaml"
-        svc_file_name = "{}-svc.yaml".format(client_id)
-        namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
-        deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
-
-        try:
-            with tempfile.TemporaryDirectory() as tempdir:
-                svc_dest_path="{}/{}".format(tempdir, svc_file_name)
-
-                api_httpd_call.render_svc_template(
-                    svc_template_file_path,
-                    svc_dest_path,
-                    client_id,
-                    client_redirect_port,
-                    namespace,
-                    deploy_name
-                )
-
-                api_httpd_call.apply_svc_file(svc_dest_path)
-
-        except Exception as e:
-            globals.logger.debug(e.args)
-            globals.logger.debug(traceback.format_exc())
-            raise
 
         return jsonify({"result": "200"}), 200
 
