@@ -305,10 +305,15 @@ def apply_settings():
         namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
 
+        # パラメータ情報(JSON形式)
+        payload = request.json.copy()
+
+        workspace_id = payload["workspace_id"]
+
         # *-*-*-*-*-*-*-*
         #  httpd 設定
         # *-*-*-*-*-*-*-*
-        conf_file_name = "epoch-ws-1-sonarqube.conf"
+        conf_file_name = "epoch-ws-{}-sonarqube.conf".format(workspace_id)
 
         try:
             # リバースプロキシサーバ再起動
