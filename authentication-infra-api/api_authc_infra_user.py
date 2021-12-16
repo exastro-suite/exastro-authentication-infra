@@ -138,6 +138,30 @@ def curret_user_password_change():
     except Exception as e:
         return common.serverError(e)
 
+def user_client_role_get(user_id, client_id):
+    """ユーザークライアントロール取得 user client role get
+
+    Args:
+        user_id (str): user id
+        client_id (str): client id
+
+    Returns:
+        [type]: [description]
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:user_id workspace_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, workspace_id))
+        globals.logger.debug('#' * 50)
+
+        ret = {
+            "result": "200",
+        }
+
+        return jsonify(ret), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
 def user_client_role_setting(user_id, client_id):
     """ユーザークライアントロール設定 user client role setting
 

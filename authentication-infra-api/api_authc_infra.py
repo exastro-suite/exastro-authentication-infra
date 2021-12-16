@@ -381,7 +381,7 @@ def call_curret_user_password():
         return common.server_error(e)
 
 
-@app.route('/user/<string:user_id>/roles/<string:client_id>', methods=['POST'])
+@app.route('/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST'])
 def call_user_role_setting(user_id, client_id):
     """ユーザークライアントロール設定呼び出し call user client role
 
@@ -397,9 +397,12 @@ def call_user_role_setting(user_id, client_id):
         globals.logger.debug('CALL {}:from[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, user_id, client_id))
         globals.logger.debug('#' * 50)
 
-        if request.method == 'POST':
+        if request.method == 'GET':
             # クライアントロール設定
-            return api_authc_infra_user.user_client_role_setting()
+            return api_authc_infra_user.user_client_role_get(user_id, client_id)
+        elif request.method == 'POST':
+            # クライアントロール設定
+            return api_authc_infra_user.user_client_role_setting(user_id, client_id)
         else:
             # Error
             raise Exception("method not support!")
@@ -409,8 +412,8 @@ def call_user_role_setting(user_id, client_id):
 
 
 @app.route('/client/<string:client_id>', methods=['GET'])
-def get_client_port(client_id):
-    """client port情報取得
+def call_client_port(client_id):
+    """client port情報呼び出し call client port
 
     Args:
         client_id (str): client id
@@ -421,34 +424,18 @@ def get_client_port(client_id):
 
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL get_client_port')
+        globals.logger.debug('CALL {}:from[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, client_id))
         globals.logger.debug('#' * 50)
 
-        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
-        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
-        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
-
-        # realm nameの取得
-        realm_name = get_current_realm(request.headers)
-
-        # client情報取得
-        response = api_keycloak_call.keycloak_client_get(realm_name, client_id, token_user, token_password, token_realm_name)
-        json_ret = json.loads(response)
-
-        if "error" in json_ret:
-            # client情報取得で"error"のレスポンスが返ってきた場合は、404:NotFound のエラーを返す
-            return jsonify(json_ret), 404
-
-        ret = {
-            "result": "200",
-            "baseUrl": json_ret["baseUrl"],
-            "enabled": True,
-        }
-
-        return jsonify(ret), 200
+        if request.method == 'GET':
+            # クライアントポート取得 get client port
+            return api_authc_infra_client.get_client_port(client_id)
+        else:
+            # Error
+            raise Exception("method not support!")
 
     except Exception as e:
-        return common.serverError(e)
+        return common.server_error(e)
 
 
 @app.route('/client/<string:client_id>/role', methods=['POST'])
