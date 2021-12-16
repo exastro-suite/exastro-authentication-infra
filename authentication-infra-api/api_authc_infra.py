@@ -14,6 +14,7 @@
 
 from flask import Flask, request, abort, jsonify, render_template
 from datetime import datetime
+import inspect
 import os
 import json
 import tempfile
@@ -33,6 +34,9 @@ from jinja2 import Template
 # User Imports
 import globals
 import common
+import api_authc_common
+import api_authc_infra_client
+import api_authc_infra_user
 import api_keycloak_call
 import api_httpd_call
 
@@ -331,187 +335,77 @@ def apply_settings():
     except Exception as e:
         return common.serverError(e)
 
-
 @app.route('/user/current', methods=['GET'])
-def curret_user_get():
-    """カレントユーザ情報取得
+def call_curret_user():
+    """カレントユーザー処理呼び出し call current_user
 
     Returns:
         Response: HTTP Respose
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL curret_user_get')
+        globals.logger.debug('CALL {}:from[{}]'.format(inspect.currentframe().f_code.co_name, request.method))
         globals.logger.debug('#' * 50)
 
-        # globals.logger.debug('header:{}'.format(request.headers))
-
-        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
-        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
-        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
-
-        # realm_nameの取得
-        realm_name = get_current_realm(request.headers)
-
-        # user_idの取得
-        user_id = get_current_user(request.headers)
-
-        # user_idをもとにKeyCloakのuser情報を取得する
-        user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
-
-        ret_json = {
-            "id": user_id,
-            "username": user_info["username"],
-            "enabled": user_info["enabled"],
-            "firstName": user_info["firstName"],
-            "lastName": user_info["lastName"],
-            "email": user_info["email"],
-        }
-
-        return jsonify({"result": "200", "info": ret_json}), 200
+        if request.method == 'GET':
+            # クライアントロール設定
+            return api_authc_infra_user.curret_user_get()
+        else:
+            # Error
+            raise Exception("method not support!")
 
     except Exception as e:
-        return common.serverError(e)
+        return common.server_error(e)
 
 
 @app.route('/user/current/password', methods=['PUT'])
-def curret_user_password_change():
-    """カレントユーザパスワード変更
+def call_curret_user_password():
+    """カレントユーザーパスワード処理呼び出し call current_user pasword
+    
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}]'.format(inspect.currentframe().f_code.co_name, request.method))
+        globals.logger.debug('#' * 50)
+
+        if request.method == 'PUT':
+            # クライアントロール設定
+            return api_authc_infra_user.curret_user_password_change()
+        else:
+            # Error
+            raise Exception("method not support!")
+
+    except Exception as e:
+        return common.server_error(e)
+
+
+@app.route('/user/<string:user_id>/roles/<string:client_id>', methods=['POST'])
+def call_user_role_setting(user_id, client_id):
+    """ユーザークライアントロール設定呼び出し call user client role
+
+    Args:
+        user_id (str): user id
+        client_id (str): client id
 
     Returns:
         Response: HTTP Respose
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL curret_user_password_change')
+        globals.logger.debug('CALL {}:from[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, user_id, client_id))
         globals.logger.debug('#' * 50)
 
-        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
-        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
-        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
-
-        # パラメータ情報(JSON形式)
-        payload = request.json.copy()
-
-        cuurent_password = payload["current_password"]
-        new_password = payload["password"]
-
-        # globals.logger.debug('in_data:{}'.format(payload))
-
-        # realm nameの取得
-        realm_name = get_current_realm(request.headers)
-
-        # user_idの取得
-        user_id = get_current_user(request.headers)
-
-        # client_nameの取得
-        client_name = get_current_client_name(request.headers)
-
-        # user_idをもとにKeyCloakのuser情報を取得する
-        user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
-
-        # client_secretの取得
-        client_secret = api_keycloak_call.keycloak_client_secret_get(realm_name, client_name, token_user, token_password, token_realm_name)
-
-        try:
-            # 現行パスワードが一致しているかチェック
-            token = api_keycloak_call.keycloak_client_user_get_token(realm_name, client_name, client_secret, user_info["username"], cuurent_password)
-        except api_keycloak_call.AuthErrorException as e:
-            # 認証があった場合は401で戻る
-            return jsonify({"result": "401"}), 401
-
-        # パスワード変更
-        api_keycloak_call.keycloak_user_reset_password(realm_name, user_id, new_password, token_user, token_password, token_realm_name)
-
-        return jsonify({"result": "200"}), 200
+        if request.method == 'POST':
+            # クライアントロール設定
+            return api_authc_infra_user.user_client_role_setting()
+        else:
+            # Error
+            raise Exception("method not support!")
 
     except Exception as e:
-        return common.serverError(e)
-
-def get_current_user(header):
-    """ログインユーザID取得
-
-    Args:
-        header (dict): request header情報
-
-    Returns:
-        str: ユーザID
-    """
-    try:
-        # 該当の要素が無い場合は、confの設定に誤り
-        HEAD_REMOTE_USER = "X-REMOTE-USER"
-        if not HEAD_REMOTE_USER in request.headers:
-            raise Exception("get_current_user error not found header:{}".format(HEAD_REMOTE_USER))
-
-        remote_user = request.headers[HEAD_REMOTE_USER]
-        # globals.logger.debug('{}:{}'.format(HEAD_REMOTE_USER, remote_user))
-
-        # 最初の@があるところまでをuser_idとする
-        idx = remote_user.rfind('@')
-        user_id = remote_user[:idx]
-        # globals.logger.debug('user_id:{}'.format(user_id))
-
-        return user_id
-
-    except Exception as e:
-        globals.logger.debug(e.args)
-        globals.logger.debug(traceback.format_exc())
-        raise
-
-def get_current_realm(header):
-    """ログインユーザのrealm取得
-
-    Args:
-        header (dict): request header情報
-
-    Returns:
-        str: realm name
-    """
-    try:
-        # 該当の要素が無い場合は、confの設定に誤り
-        HEAD_REMOTE_USER = "X-REMOTE-USER"
-        if not HEAD_REMOTE_USER in request.headers:
-            raise Exception("get_current_realm error not found header:{}".format(HEAD_REMOTE_USER))
-
-        remote_user = request.headers[HEAD_REMOTE_USER]
-        # globals.logger.debug('{}:{}'.format(HEAD_REMOTE_USER, remote_user))
-
-        # urlの最後の部分をrealm情報とする
-        idx = remote_user.rfind('/')
-        realm_name = remote_user[idx+1:]
-        # globals.logger.debug('realm_name:{}'.format(realm_name))
-
-        return realm_name
-
-    except Exception as e:
-        globals.logger.debug(e.args)
-        globals.logger.debug(traceback.format_exc())
-        raise
-
-def get_current_client_name(header):
-    """ログインユーザのclient name取得
-
-    Args:
-        header (dict): request header情報
-
-    Returns:
-        str: client name
-    """
-    try:
-        # 該当の要素が無い場合は、confの設定に誤り
-        HEAD_CLIENT_NAME = "OIDC-CLAIM-AUD"
-        if not HEAD_CLIENT_NAME in request.headers:
-            raise Exception("get_current_client_name error not found header:{}".format(HEAD_CLIENT_NAME))
-
-        client_name = request.headers[HEAD_CLIENT_NAME]
-        globals.logger.debug('{}:{}'.format(HEAD_CLIENT_NAME, client_name))
-
-        return client_name
-
-    except Exception as e:
-        globals.logger.debug(e.args)
-        globals.logger.debug(traceback.format_exc())
-        raise
+        return common.server_error(e)
 
 
 @app.route('/client/<string:client_id>', methods=['GET'])
@@ -555,6 +449,32 @@ def get_client_port(client_id):
 
     except Exception as e:
         return common.serverError(e)
+
+
+@app.route('/client/<string:client_id>/role', methods=['POST'])
+def call_client_role(client_id):
+    """クライアントロール設定呼び出し call client role
+
+    Args:
+        client_id (str): client id
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, client_id))
+        globals.logger.debug('#' * 50)
+
+        if request.method == 'POST':
+            # クライアントロール設定
+            return api_authc_infra_client.client_role_setting()
+        else:
+            # Error
+            raise Exception("method not support!")
+
+    except Exception as e:
+        return common.server_error(e)
 
 
 if __name__ == "__main__":
