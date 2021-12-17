@@ -640,21 +640,19 @@ def keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, cli
             "Authorization": "Bearer {}".format(token),
         }
 
-        data_para = {
-                "roles": [ client_roles ]
-        }
+        data_para = client_roles
 
         globals.logger.debug("user client role-mapping post 送信")
         # 呼び出し先設定 requests setting
         api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
-        request_response = requests.post("{}/auth/admin/realms/{}/users/{}/role-mappings/clients/{}".format(api_url, realm_name, user_info["id"], client_id), headers=header_para, data=json.dumps(data_para))
+        request_response = requests.post("{}/auth/admin/realms/{}/users/{}/role-mappings/clients/{}".format(api_url, realm_name, user_id, client_id), headers=header_para, data=json.dumps(data_para))
 
         globals.logger.debug(request_response.text)
 
         # 正常終了以外はエラー not normal end to error
-        if request_response.status_code != 200:
-            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_namem, request_response.status_code, request_response.text))
+        if request_response.status_code != 204:
+            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_name, request_response.status_code, request_response.text))
 
         globals.logger.debug("user client role-mapping create Succeed!")
 
@@ -774,6 +772,150 @@ def keycloak_client_create(realm_name, client_name, client_opt, token_user, toke
         globals.logger.debug("client create Succeed!")
 
         # 正常応答
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+
+
+def keycloak_client_role_create(realm_name, client_id, role, token):
+    """クライアントロール作成 client role create
+
+    Args:
+        realm_name (str): realm name
+        client_id (str): client id
+        role (dic): role
+        toekn (str): token
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: client_id[{}] role[{}]'.format(inspect.currentframe().f_code.co_name, client_id, role))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        data_para = role
+
+        globals.logger.debug("client role post send")
+        # 呼び出し先設定 requests setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        request_response = requests.post("{}/auth/admin/realms/{}/clients/{}/roles".format(api_url, realm_name, client_id), headers=header_para, data=json.dumps(data_para))
+
+        globals.logger.debug(request_response.text)
+
+        # 正常終了以外はエラー not normal end to error
+        if request_response.status_code != 201:
+            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_name, request_response.status_code, request_response.text))
+
+        globals.logger.debug("client role create Succeed!")
+
+        # 正常応答 normal return
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+
+def keycloak_client_role_get(realm_name, client_id, role_name, token):
+    """クライアントロール作成 client role create
+
+    Args:
+        realm_name (str): realm name
+        client_id (str): client id
+        role_name (str): role name
+        toekn (str): token
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: client_id[{}] role_name[{}]'.format(inspect.currentframe().f_code.co_name, client_id, role_name))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        globals.logger.debug("client role get send")
+        # 呼び出し先設定 requests setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        request_response = requests.get("{}/auth/admin/realms/{}/clients/{}/roles/{}".format(api_url, realm_name, client_id, role_name), headers=header_para)
+
+        globals.logger.debug(request_response.text)
+
+        # 正常終了以外はエラー not normal end to error
+        if request_response.status_code != 200:
+            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_name, request_response.status_code, request_response.text))
+
+        globals.logger.debug("client role get Succeed!")
+
+        # 正常応答 normal return
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+
+def keycloak_client_role_composite_create(realm_name, client_id, role_name, composite_roles, token):
+    """クライアントロール集合体作成 client role composite create
+
+    Args:
+        realm_name (str): realm name
+        client_id (str): client id
+        role_name (str): role name
+        composite_roles (dic): composite roles
+        toekn (str): token
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: client_id[{}] role_name[{}] composite_roles[{}]'.format(inspect.currentframe().f_code.co_name, client_id, role_name, composite_roles))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        data_para = composite_roles
+
+        globals.logger.debug("client role composite post send")
+        # 呼び出し先設定 requests setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        request_response = requests.post("{}/auth/admin/realms/{}/clients/{}/roles/{}/composites".format(api_url, realm_name, client_id, role_name), headers=header_para, data=json.dumps(data_para))
+
+        globals.logger.debug(request_response.text)
+
+        # 正常終了以外はエラー not normal end to error
+        if request_response.status_code != 204:
+            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_name, request_response.status_code, request_response.text))
+
+        globals.logger.debug("client role composite create Succeed!")
+
+        # 正常応答 normal return
         return request_response.text
 
     except Exception as e:

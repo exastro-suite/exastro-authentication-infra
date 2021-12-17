@@ -220,25 +220,21 @@ def user_client_role_setting(realm, user_id, client_id):
         client_id (str): client id
 
     Returns:
-        [type]: [description]
+        Response: HTTP Respose
     """
     try:
         globals.logger.debug('#' * 50)
         globals.logger.debug('CALL {}:realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id, client_id))
         globals.logger.debug('#' * 50)
 
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
         # 引数を展開 Expand arguments
         payload = request.json.copy()
 
         globals.logger.debug(payload)
-
-        roles = []
-        # ユーザーに追加するロールを繰り返し処理する Iterate over the roles you add to the user
-        for role in payload["roles"]:
-            add_role = {
-                "name": role["name"]
-            }
-            roles.append(add_role)
 
         token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
@@ -247,8 +243,23 @@ def user_client_role_setting(realm, user_id, client_id):
         # tokenの取得 get toekn 
         token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
 
-        # realm nameの取得
-        api_keycloak_call.keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, client_roles, token)
+        roles = []
+        # ユーザーに追加するロールを繰り返し処理する Iterate over the roles you add to the user
+        for role in payload["roles"]:
+            role_name = role["name"]
+            # role情報取得 get role info. 
+            # role idが登録する際に必要なので取得する Get the role id as it is needed when registering
+            role_info = api_keycloak_call.keycloak_client_role_get(realm, client_id, role_name, token)
+            role_info = json.loads(role_info)
+            # 追加するロールを設定 Set the role to add
+            add_role = {
+                "id": role_info["id"],
+                "name": role_name,
+            }
+            roles.append(add_role)
+
+        # user client role set
+        api_keycloak_call.keycloak_user_client_role_mapping_create(realm, user_id, client_id, roles, token)
 
         ret = {
             "result": "200",

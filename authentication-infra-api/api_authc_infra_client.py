@@ -101,6 +101,44 @@ def client_role_setting(realm, client_id):
         globals.logger.debug('CALL {}: realm[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, client_id))
         globals.logger.debug('#' * 50)
 
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # 引数を展開 Expand arguments
+        payload = request.json.copy()
+
+        globals.logger.debug(payload)
+
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
+        # ロールのみを最初に登録する Register only the role first
+        for role in payload["roles"]:
+            role_name = role["name"]
+            # 追加するロールを設定 Set the role to add
+            add_role = {
+                "name": role_name,
+            }
+            # 1 role client role set
+            api_keycloak_call.keycloak_client_role_create(realm, client_id, add_role, token)
+
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+        # 続いてロールの配下がある場合は、その要素を追加する Next, if there is a subordinate of the role, add that element
+        composite_roles = []
+        # ロール数分繰り返し処理する Repeat for the number of rolls
+        for role in payload["roles"]:
+            role_name = role["name"]
+            # 要素があれば子供のロール情報を取得して設定する If there is an element, get and set the child's role information
+            if len(role["composite_roles"]) > 0:
+                for composite_role in role["composite_roles"]:
+                    role_info = api_keycloak_call.keycloak_client_role_get(realm, client_id, composite_role, token)
+                    composite_roles.append(json.loads(role_info))
+
+                # user client role set
+                api_keycloak_call.keycloak_client_role_composite_create(realm, client_id, role_name, composite_roles, token)
+
         ret = {
             "result": "200",
         }
