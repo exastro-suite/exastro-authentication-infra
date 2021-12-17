@@ -222,7 +222,7 @@ def user_client_role_setting(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
+        globals.logger.debug('CALL {}:user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         # 引数を展開 Expand arguments
@@ -238,20 +238,12 @@ def user_client_role_setting(user_id, client_id):
             }
             roles.append(add_role)
 
-        # realm nameの取得
-        realm_name = api_authc_common.get_current_realm(request.headers)
-
-        # user_idの取得
-        user_id = api_authc_common.get_current_user(request.headers)
-
-        # client_nameの取得
-        client_name = api_authc_common.get_current_client_name(request.headers)
-
-        # user_idをもとにKeyCloakのuser情報を取得する
-        user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
 
         # tokenの取得 get toekn 
-        token = api_authc_common.get_current_user_token(request.headers)
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
 
         # realm nameの取得
         api_keycloak_call.keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, client_roles, token)

@@ -381,11 +381,12 @@ def call_curret_user_password():
         return common.server_error(e)
 
 
-@app.route('/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST'])
-def call_user_role_setting(user_id, client_id):
+@app.route('/<string:realm>/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST'])
+def call_user_role_setting(realm, user_id, client_id):
     """ユーザークライアントロール設定呼び出し call user client role
 
     Args:
+        realm (str): realm
         user_id (str): user id
         client_id (str): client id
 
@@ -394,7 +395,7 @@ def call_user_role_setting(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:from[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, user_id, client_id))
+        globals.logger.debug('CALL {}:from[{}] realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
@@ -411,11 +412,12 @@ def call_user_role_setting(user_id, client_id):
         return common.server_error(e)
 
 
-@app.route('/client/<string:client_id>', methods=['GET'])
-def call_client_port(client_id):
+@app.route('/<string:realm>/client/<string:client_id>', methods=['GET'])
+def call_client_port(realm, client_id):
     """client port情報呼び出し call client port
 
     Args:
+        realm (str): realm
         client_id (str): client id
 
     Returns:
@@ -424,7 +426,7 @@ def call_client_port(client_id):
 
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:from[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, client_id))
+        globals.logger.debug('CALL {}:from[{}] realm[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, client_id))
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
@@ -438,11 +440,12 @@ def call_client_port(client_id):
         return common.server_error(e)
 
 
-@app.route('/client/<string:client_id>/role', methods=['POST'])
-def call_client_role(client_id):
+@app.route('/<string:realm>/client/<string:client_id>/role', methods=['POST'])
+def call_client_role(realm, client_id):
     """クライアントロール設定呼び出し call client role
 
     Args:
+        realm (str): realm
         client_id (str): client id
 
     Returns:
@@ -450,7 +453,7 @@ def call_client_role(client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:from[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, client_id))
+        globals.logger.debug('CALL {}:from[{}] realm[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, client_id))
         globals.logger.debug('#' * 50)
 
         if request.method == 'POST':
