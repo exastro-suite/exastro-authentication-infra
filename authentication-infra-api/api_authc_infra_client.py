@@ -86,10 +86,11 @@ def get_client_port(client_id):
         return common.serverError(e)
 
 
-def client_role_setting(client_id):
+def client_role_setting(realm, client_id):
     """クライアントロール設定 client role setting
 
     Args:
+        realm (str): realm
         client_id (str): client id
 
     Returns:
@@ -97,7 +98,7 @@ def client_role_setting(client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}: client_id[{}]'.format(inspect.currentframe().f_code.co_name, client_id))
+        globals.logger.debug('CALL {}: realm[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, client_id))
         globals.logger.debug('#' * 50)
 
         ret = {

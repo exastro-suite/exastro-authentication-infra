@@ -400,10 +400,10 @@ def call_user_role_setting(realm, user_id, client_id):
 
         if request.method == 'GET':
             # クライアントロール設定
-            return api_authc_infra_user.user_client_role_get(user_id, client_id)
+            return api_authc_infra_user.user_client_role_get(realm, user_id, client_id)
         elif request.method == 'POST':
             # クライアントロール設定
-            return api_authc_infra_user.user_client_role_setting(user_id, client_id)
+            return api_authc_infra_user.user_client_role_setting(realm, user_id, client_id)
         else:
             # Error
             raise Exception("method not support!")
@@ -431,7 +431,7 @@ def call_client_port(realm, client_id):
 
         if request.method == 'GET':
             # クライアントポート取得 get client port
-            return api_authc_infra_client.get_client_port(client_id)
+            return api_authc_infra_client.get_client_port(realm, client_id)
         else:
             # Error
             raise Exception("method not support!")
@@ -458,7 +458,7 @@ def call_client_role(realm, client_id):
 
         if request.method == 'POST':
             # クライアントロール設定
-            return api_authc_infra_client.client_role_setting()
+            return api_authc_infra_client.client_role_setting(realm, client_id)
         else:
             # Error
             raise Exception("method not support!")

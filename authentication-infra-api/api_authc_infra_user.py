@@ -138,10 +138,11 @@ def curret_user_password_change():
     except Exception as e:
         return common.serverError(e)
 
-def user_client_role_get(user_id, client_id):
+def user_client_role_get(realm, user_id, client_id):
     """ユーザークライアントロール取得 user client role get
 
     Args:
+        realm (str): realm
         user_id (str): user id
         client_id (str): client id
 
@@ -150,7 +151,7 @@ def user_client_role_get(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
+        globals.logger.debug('CALL {}:realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         ret = {
@@ -210,10 +211,11 @@ def user_client_role_get(user_id, client_id):
     except Exception as e:
         return common.serverError(e)
 
-def user_client_role_setting(user_id, client_id):
+def user_client_role_setting(realm, user_id, client_id):
     """ユーザークライアントロール設定 user client role setting
 
     Args:
+        realm (str): realm
         user_id (str): user id
         client_id (str): client id
 
@@ -222,7 +224,7 @@ def user_client_role_setting(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
+        globals.logger.debug('CALL {}:realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         # 引数を展開 Expand arguments
