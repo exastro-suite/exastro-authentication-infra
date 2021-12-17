@@ -159,8 +159,9 @@ def user_client_role_get(user_id, client_id):
                 {
                     "user_id": user_id,
                     "roles": [
-                        "name": "ws-1-owner",
-                        "composite_roles": [
+                        {
+                            "name": "ws-1-owner",
+                            "composite_roles": [
                                 {
                                     "name": "ws-1-role-ws-reference",
                                 },
@@ -197,7 +198,8 @@ def user_client_role_get(user_id, client_id):
                                 {
                                     "name": "ws-1-role-cd-execute-result",
                                 }
-                        ]
+                            ]
+                        }
                     ]
                 }
             ]
@@ -222,6 +224,37 @@ def user_client_role_setting(user_id, client_id):
         globals.logger.debug('#' * 50)
         globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
         globals.logger.debug('#' * 50)
+
+        # 引数を展開 Expand arguments
+        payload = request.json.copy()
+
+        globals.logger.debug(payload)
+
+        roles = []
+        # ユーザーに追加するロールを繰り返し処理する Iterate over the roles you add to the user
+        for role in payload["roles"]:
+            add_role = {
+                "name": role["name"]
+            }
+            roles.append(add_role)
+
+        # realm nameの取得
+        realm_name = api_authc_common.get_current_realm(request.headers)
+
+        # user_idの取得
+        user_id = api_authc_common.get_current_user(request.headers)
+
+        # client_nameの取得
+        client_name = api_authc_common.get_current_client_name(request.headers)
+
+        # user_idをもとにKeyCloakのuser情報を取得する
+        user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
+
+        # tokenの取得 get toekn 
+        token = api_authc_common.get_current_user_token(request.headers)
+
+        # realm nameの取得
+        api_keycloak_call.keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, client_roles, token)
 
         ret = {
             "result": "200",

@@ -14,6 +14,7 @@
 
 from flask import Flask, request, abort, jsonify, render_template
 from datetime import datetime
+import inspect
 import os
 import json
 import tempfile
@@ -121,6 +122,31 @@ def get_current_client_name(header):
         globals.logger.debug('{}:{}'.format(HEAD_CLIENT_NAME, client_name))
 
         return client_name
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+def get_current_token(header):
+    """ログインユーザ token取得
+
+    Args:
+        header (dict): request header情報
+
+    Returns:
+        str: token
+    """
+    try:
+        # 該当の要素が無い場合は、confの設定に誤り
+        HEAD_AUTHORIZATION = "Authorization"
+        if not HEAD_AUTHORIZATION in request.headers:
+            raise Exception("{} error not found header:{}".format(inspect.currentframe().f_code.co_name, HEAD_REMOTE_USER))
+
+        token = request.headers[HEAD_AUTHORIZATION]
+        globals.logger.debug('{}:{}'.format(HEAD_AUTHORIZATION, token))
+
+        return token
 
     except Exception as e:
         globals.logger.debug(e.args)
