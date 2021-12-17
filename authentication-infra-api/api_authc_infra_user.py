@@ -150,11 +150,57 @@ def user_client_role_get(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id workspace_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, workspace_id))
+        globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         ret = {
             "result": "200",
+            "rows": [
+                {
+                    "user_id": user_id,
+                    "roles": [
+                        "name": "ws-1-owner",
+                        "composite_roles": [
+                                {
+                                    "name": "ws-1-role-ws-reference",
+                                },
+                                {
+                                    "name": "ws-1-role-ws-name-update",
+                                },
+                                {
+                                    "name": "ws-1-role-ws-ci-update",
+                                },
+                                {
+                                    "name": "ws-1-role-ws-cd-update",
+                                },
+                                {
+                                    "name": "ws-1-role-ws-delete",
+                                },
+                                {
+                                    "name": "ws-1-role-owner-role-setting",
+                                },
+                                {
+                                    "name": "ws-1-role-member-add",
+                                },
+                                {
+                                    "name": "ws-1-role-member-role-update",
+                                },
+                                {
+                                    "name": "ws-1-role-ci-pipeline-result",
+                                },
+                                {
+                                    "name": "ws-1-role-manifest-setting",
+                                },
+                                {
+                                    "name": "ws-1-role-cd-execute",
+                                },
+                                {
+                                    "name": "ws-1-role-cd-execute-result",
+                                }
+                        ]
+                    ]
+                }
+            ]
         }
 
         return jsonify(ret), 200
@@ -174,7 +220,7 @@ def user_client_role_setting(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id workspace_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, workspace_id))
+        globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         ret = {
