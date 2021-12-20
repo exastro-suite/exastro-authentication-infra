@@ -189,6 +189,90 @@ def keycloak_realm_role_get(realm_name, role_name, token_user, token_password, t
         globals.logger.debug(traceback.format_exc())
         raise
 
+def keycloak_user_role_get(realm_name, user_id, client_id, token_user, token_password, token_realm):
+    """ユーザロール情報取得 user role info get
+    Args:
+        realm_name (str): realm name
+        user_id (str): user id
+        client_id (str): client id
+        token_user (str): token user name
+        token_password (str): token user password
+        token_realm (str): token realm name
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_user_role_get: realm_name:{}, user_id:{}, client_id:{}'.format(realm_name, user_id, client_id))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm)),
+        }
+
+        globals.logger.debug("user role get送信")
+        # 呼び出し先設定 call destination setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+        request_response = requests.get("{}/auth/admin/realms/{}/users/{}/role-mappings/clients/{}/composite".format(api_url, realm_name, user_id, client_id), headers=header_para)
+        globals.logger.debug(request_response.text)
+        
+        # 取得できない場合は、Exceptionを発行する if it cannot be obtained, an Exception will be thrown
+        if request_response.status_code != 200:
+            raise Exception("get user role error status:{}, response:{}".format(request_response.status_code, request_response.text))
+
+        response_data = json.loads(request_response.text)
+
+        return response_data
+    
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+def keycloak_role_uesrs_get(realm_name, client_id, role_name, token_user, token_password, token_realm):
+    """ロール毎のユーザ情報リスト取得 get user info list for each role
+    Args:
+        realm_name (str): realm name
+        client_id (str): client id
+        role_name (str): role name
+        token_user (str): token user name
+        token_password (str): token user password
+        token_realm (str): token realm name
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_role_uesrs_get: realm_name:{}, client_id:{}, role_name:{}'.format(realm_name, client_id, role_name))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm)),
+        }
+
+        globals.logger.debug("role users get送信")
+        # 呼び出し先設定 call destination setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+        request_response = requests.get("{}/auth/admin/realms/{}/clients/{}/roles/{}/users".format(api_url, realm_name, client_id, role_name), headers=header_para)
+        globals.logger.debug(request_response.text)
+        
+        # 取得できない場合は、Exceptionを発行する if it cannot be obtained, an Exception will be thrown
+        if request_response.status_code != 200:
+            raise Exception("get role users error status:{}, response:{}".format(request_response.status_code, request_response.text))
+
+        response_data = json.loads(request_response.text)
+
+        return response_data
+    
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
 def keycloak_group_create(realm_name, group_name, token_user, token_password, token_realm):
     """グループ作成
     Args:
@@ -1316,6 +1400,51 @@ def get_user_token(user_name, password, realm_name):
 
         # # 正常応答
         # return json_ret["access_token"]
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+def keycloak_client_role_get_by_name(realm_name, client_id, role_name, token_user, token_password, token_realm_name):
+    """クライアントロール取得（ロール名指定） get client role by name
+    Args:
+        realm_name (str): realm name
+        client_id (str): client id
+        role_name (str): role_name
+        toekn_user (str): token 取得用 user name
+        toekn_password (str): token 取得用 user password
+        toekn_realm_name (str): token 取得用 realm name
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL keycloak_client_role_get_by_name: id_of_client:{}'.format(client_id))
+        globals.logger.debug('------------------------------------------------------')
+
+        # 呼び出し先設定 Call destination setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
+        }
+
+        globals.logger.debug("client role get")
+
+        # クライアントロール取得  get client role
+        request_response = requests.get("{}/auth/admin/realms/{}/clients/{}/roles/{}".format(api_url, realm_name, client_id, role_name), headers=header_para)
+        
+        # 取得できない場合は、Exceptionを発行する If it cannot be obtained, an Exception will be thrown
+        if request_response.status_code != 200:
+            globals.logger.debug("client role get error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        else:
+            globals.logger.debug(request_response.text)
+            globals.logger.debug("client role get Succeed!")
+        
+        return request_response.text
 
     except Exception as e:
         globals.logger.debug(e.args)

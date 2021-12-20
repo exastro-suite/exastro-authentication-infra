@@ -477,11 +477,39 @@ def call_user_role_setting(realm, user_id, client_id):
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
-            # クライアントロール設定
+            # クライアントロール情報取得
             return api_authc_infra_user.user_client_role_get(realm, user_id, client_id)
         elif request.method == 'POST':
             # クライアントロール設定
             return api_authc_infra_user.user_client_role_setting(realm, user_id, client_id)
+        else:
+            # Error
+            raise Exception("method not support!")
+
+    except Exception as e:
+        return common.server_error(e)
+
+
+@app.route('/<string:realm>/client/<string:client_id>/roles/<string:role_name>/users', methods=['GET'])
+def call_role_users_get(realm, client_id, role_name):
+    """クライアントロール毎のユーザ情報取得 呼び出し call user info for each role get
+
+    Args:
+        realm (str): realm
+        client_id (str): client id
+        role_name (str): role name
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}] realm[{}] client_id[{}] role_name[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, client_id, role_name))
+        globals.logger.debug('#' * 50)
+
+        if request.method == 'GET':
+            # ユーザークライアントロール情報取得 user client role info get
+            return api_authc_infra_user.client_role_users_get(realm, client_id, role_name)
         else:
             # Error
             raise Exception("method not support!")
@@ -544,6 +572,33 @@ def call_client_role(realm, client_id):
     except Exception as e:
         return common.server_error(e)
 
+
+@app.route('/<string:realm>/client/<string:client_id>/role/<string:role_name>', methods=['GET'])
+def call_client_role_display_name(realm, client_id, role_name):
+    """クライアントロール表示名取得 呼び出し call client role display name get
+
+    Args:
+        realm (str): realm
+        client_id (str): client id
+        role_name (str): role name
+        
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}] realm[{}] client_id[{}] role_name[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, client_id, role_name))
+        globals.logger.debug('#' * 50)
+
+        if request.method == 'GET':
+            # クライアントロール表示名取得 client role display name get
+            return api_authc_infra_user.client_role_display_name_get(realm, client_id, role_name)
+        else:
+            # Error
+            raise Exception("method not support!")
+
+    except Exception as e:
+        return common.server_error(e)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('API_AUTHC_INFRA_PORT', '8000')), threaded=True)
