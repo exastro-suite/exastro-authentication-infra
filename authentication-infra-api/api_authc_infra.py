@@ -175,13 +175,19 @@ def post_settings():
 
         # httpd 設定
         try:
+            # Configuration file initialization - 設定ファイル初期化
+            api_httpd_call.init_httpd_conf()
+
+            # Create setting directory for client - クライアント用設定ディレクトリ作成
+            api_httpd_call.mkdir_httpd_conf_client(client_namespace)
+
             with tempfile.TemporaryDirectory() as tempdir:
-                conf_dest_path="{}/{}".format(tempdir, conf_file_name)
+                temp_conf_path="{}/{}".format(tempdir, conf_file_name)
 
                 # テンプレートファイルへ値埋め込み
                 api_httpd_call.generate_system_conf(
                     template_file_path,
-                    conf_dest_path,
+                    temp_conf_path,
                     client_redirect_host,
                     client_secret_id,
                     crypto_passphrase,
@@ -189,11 +195,11 @@ def post_settings():
                     auth_port,
                 )
 
-                # テンプレートファイルの適用処理
-                api_httpd_call.apply_configmap_file(cm_name, cm_namespace, conf_dest_path)
+                # Move to the configuration file directory - 設定ファイルディレクトリに移動
+                api_httpd_call.mv_httpd_conf_file(temp_conf_path, None)
 
                 # httpd restart
-                api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name, conf_file_name)
+                api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name)
         except Exception as e:
             globals.logger.debug(e.args)
 
@@ -284,11 +290,44 @@ def post_client(realm):
                     backend_url,
                 )
 
-                # テンプレートファイルの適用処理
-                api_httpd_call.apply_configmap_file(cm_name, cm_namespace, conf_dest_path)
+                # Move to the configuration file directory - 設定ファイルディレクトリに移動
+                api_httpd_call.mv_httpd_conf_file(conf_dest_path, None)
 
         except Exception as e:
             globals.logger.debug(e.args)
+
+        return jsonify({"result": "200"}), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
+@app.route('/settings/<string:realm>/clients/<string:client_id>/route', methods=['POST'])
+def post_client_route(realm, client_id):
+    """
+
+    Args:
+        realm (str): realm
+        client_id (str): client id
+        route_id (str): route id
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL post_client_route')
+        globals.logger.debug('#' * 50)
+
+        payload = request.json.copy()
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            conf_dest_path="{}/{}.conf".format(tempdir, payload["route_id"])
+
+            # Generate a configuration file - 設定ファイル生成
+            api_httpd_call.generate_conf(os.path.join(os.environ["CONF_TEMPLATE_PATH"],payload["template_file"]), conf_dest_path, payload["render_params"])
+
+            # Move to the configuration file directory - 設定ファイルディレクトリに移動
+            api_httpd_call.mv_httpd_conf_file(conf_dest_path, client_id)
 
         return jsonify({"result": "200"}), 200
 
@@ -309,21 +348,9 @@ def apply_settings():
         namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
 
-        # パラメータ情報(JSON形式)
-        payload = request.json.copy()
-
-        workspace_id = payload["workspace_id"]
-
-        # *-*-*-*-*-*-*-*
-        #  httpd 設定
-        # *-*-*-*-*-*-*-*
-        conf_file_name = "epoch-ws-{}-sonarqube.conf".format(workspace_id)
-
         try:
             # リバースプロキシサーバ再起動
-            # result = subprocess.check_output(["kubectl", "rollout", "restart", "deploy", "-n", namespace, deploy_name], stderr=subprocess.STDOUT)
-            # globals.logger.debug(result.decode('utf-8'))
-            api_httpd_call.gateway_httpd_reload(namespace, deploy_name, conf_file_name)
+            api_httpd_call.gateway_httpd_reload(namespace, deploy_name)
         except subprocess.CalledProcessError as e:
             globals.logger.debug("ERROR: except subprocess.CalledProcessError")
             globals.logger.debug("returncode:{}".format(e.returncode))
