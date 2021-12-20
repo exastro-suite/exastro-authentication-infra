@@ -12,7 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from flask import Flask, request, abort, jsonify, render_template
+from requests.models import Response
+from flask import Flask, request, abort, jsonify, render_template, redirect, make_response
 from datetime import datetime
 import inspect
 import os
@@ -406,6 +407,56 @@ def call_curret_user_password():
 
     except Exception as e:
         return common.server_error(e)
+
+@app.route('/user/refresh_session.js',methods=['GET'])
+def call_refresh_session_js():
+    """Script to refresh session information - セッション情報をリフレッシュするためのscript
+
+    Returns:
+        Response: HTTP Respose
+    """
+    return make_response(
+        """
+        function refresh_session() {
+            return new Promise((resolve, reject) => {
+                var ifra = document.createElement('IFRAME');
+                ifra.setAttribute('src', "/api/user/refresh_session");
+                document.body.appendChild(ifra);
+                var is_finish = function() {
+                    try {
+                        if(ifra.contentWindow.refreshed_session) {
+                            resolve();
+                            return;
+                        }
+                    } catch(e) {}
+                    setTimeout(is_finish, 200);
+                }
+                is_finish();
+            })
+        }
+        """
+    )
+
+@app.route('/user/refresh_session',methods=['GET'])
+def call_refresh_session():
+    """Refresh session information - セッション情報をリフレッシュ
+
+    Returns:
+        Response: HTTP Respose
+    """
+    response = redirect('/user/refreshed_session')
+    response.set_cookie('mod_auth_openidc_session', value="", path='/', secure=True, httponly=True)
+    return response
+
+@app.route('/user/refreshed_session',methods=['GET'])
+def call_refreshed_session():
+    """Response to refresh session information - セッション情報をリフレッシュ完了の応答
+
+    Returns:
+        Response: HTTP Respose
+    """
+    response = make_response('<html><script>var refreshed_session=true;</script></html>')
+    return response
 
 
 @app.route('/<string:realm>/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST'])
