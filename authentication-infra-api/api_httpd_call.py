@@ -496,7 +496,7 @@ def gateway_httpd_reload(namespace, deploy_name):
                         # httpd -k gracefulコマンドの実行
                         globals.logger.debug("[START]: httpd graceful restart pod :" + target_pod["metadata"]["name"])
                         result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
-                        globals.logger.debug(result.decode('utf-8'))
+                        # globals.logger.debug(result.decode('utf-8'))
                     else:
                         # ready状態じゃないPODはSKIP
                         globals.logger.debug("[SKIP]: httpd graceful restart pod :" + target_pod["metadata"]["name"])

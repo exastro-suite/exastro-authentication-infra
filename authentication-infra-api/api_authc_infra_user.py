@@ -138,10 +138,11 @@ def curret_user_password_change():
     except Exception as e:
         return common.serverError(e)
 
-def user_client_role_get(user_id, client_id):
+def user_client_role_get(realm, user_id, client_id):
     """ユーザークライアントロール取得 user client role get
 
     Args:
+        realm (str): realm
         user_id (str): user id
         client_id (str): client id
 
@@ -150,7 +151,7 @@ def user_client_role_get(user_id, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
+        globals.logger.debug('CALL {}:realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id, client_id))
         globals.logger.debug('#' * 50)
 
         ret = {
@@ -159,8 +160,9 @@ def user_client_role_get(user_id, client_id):
                 {
                     "user_id": user_id,
                     "roles": [
-                        "name": "ws-1-owner",
-                        "composite_roles": [
+                        {
+                            "name": "ws-1-owner",
+                            "composite_roles": [
                                 {
                                     "name": "ws-1-role-ws-reference",
                                 },
@@ -197,7 +199,8 @@ def user_client_role_get(user_id, client_id):
                                 {
                                     "name": "ws-1-role-cd-execute-result",
                                 }
-                        ]
+                            ]
+                        }
                     ]
                 }
             ]
@@ -208,20 +211,55 @@ def user_client_role_get(user_id, client_id):
     except Exception as e:
         return common.serverError(e)
 
-def user_client_role_setting(user_id, client_id):
+def user_client_role_setting(realm, user_id, client_id):
     """ユーザークライアントロール設定 user client role setting
 
     Args:
+        realm (str): realm
         user_id (str): user id
         client_id (str): client id
 
     Returns:
-        [type]: [description]
+        Response: HTTP Respose
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:user_id client_id[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id))
+        globals.logger.debug('CALL {}:realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id, client_id))
         globals.logger.debug('#' * 50)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # 引数を展開 Expand arguments
+        payload = request.json.copy()
+
+        globals.logger.debug(payload)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
+        roles = []
+        # ユーザーに追加するロールを繰り返し処理する Iterate over the roles you add to the user
+        for role in payload["roles"]:
+            role_name = role["name"]
+            # role情報取得 get role info. 
+            # role idが登録する際に必要なので取得する Get the role id as it is needed when registering
+            role_info = api_keycloak_call.keycloak_client_role_get(realm, client_id, role_name, token)
+            role_info = json.loads(role_info)
+            # 追加するロールを設定 Set the role to add
+            add_role = {
+                "id": role_info["id"],
+                "name": role_name,
+            }
+            roles.append(add_role)
+
+        # user client role set
+        api_keycloak_call.keycloak_user_client_role_mapping_create(realm, user_id, client_id, roles, token)
 
         ret = {
             "result": "200",
