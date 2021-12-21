@@ -56,7 +56,7 @@ def get_client_port(client_id):
 
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL get_client_port')
+        globals.logger.debug('CALL {}: client_id[{}]'.format(inspect.currentframe().f_code.co_name, client_id))
         globals.logger.debug('#' * 50)
 
         token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
