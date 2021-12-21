@@ -509,7 +509,7 @@ def call_role_users_get(realm, client_id, role_name):
 
         if request.method == 'GET':
             # ユーザークライアントロール情報取得 user client role info get
-            return api_authc_infra_user.client_role_users_get(realm, client_id, role_name)
+            return api_authc_infra_client.client_role_users_get(realm, client_id, role_name)
         else:
             # Error
             raise Exception("method not support!")
@@ -592,7 +592,7 @@ def call_client_role_display_name(realm, client_id, role_name):
 
         if request.method == 'GET':
             # クライアントロール表示名取得 client role display name get
-            return api_authc_infra_user.client_role_display_name_get(realm, client_id, role_name)
+            return api_authc_infra_client.client_role_display_name_get(realm, client_id, role_name)
         else:
             # Error
             raise Exception("method not support!")

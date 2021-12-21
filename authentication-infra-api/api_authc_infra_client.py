@@ -147,3 +147,77 @@ def client_role_setting(realm, client_id):
 
     except Exception as e:
         return common.serverError(e)
+
+
+def client_role_display_name_get(realm, client_id, role_name):
+    """クライアントロール表示名取得 user client role get
+
+    Args:
+        realm (str): realm
+        client_id (str): client id
+        role_name (str): role_name
+
+    Returns:
+        [type]: [description]
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:realm[{}] client_id[{}] role_name[{}]'.format(inspect.currentframe().f_code.co_name, realm, client_id, role_name))
+        globals.logger.debug('#' * 50)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # クライアントロール取得 get client role
+        response = api_keycloak_call.keycloak_client_role_get_by_name(realm, client_id, role_name, token_user, token_password, token_realm_name)
+        role_info = json.loads(response)
+
+        ret_json = {
+            "name": role_info["name"],
+            "display_name": role_info["attributes"]["display"][0]
+        }
+
+        return jsonify({"result": "200", "rows": ret_json }), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
+
+def client_role_users_get(realm, client_id, role_name):
+    """ロール毎のユーザ情報リスト取得 get user info list for each role
+
+    Args:
+        realm (str): realm
+        client_id (str): client id
+        role_name (str): role_name
+
+    Returns:
+        [type]: [description]
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:realm[{}] client_id[{}] role_name[{}]'.format(inspect.currentframe().f_code.co_name, realm, client_id, role_name))
+        globals.logger.debug('#' * 50)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # ロール毎のユーザ情報リスト取得 get user info list for each role
+        role_users_info = api_keycloak_call.keycloak_role_uesrs_get(realm, client_id, role_name, token_user, token_password, token_realm_name)
+
+        rows = []
+        for user_info in role_users_info:
+            rows = {
+                "user_id": user_info["id"],
+                "user_name": user_info["username"],
+                "first_name": user_info["firstName"],
+                "last_name": user_info["lastName"],
+                "email": user_info["email"]
+            }
+
+        return jsonify({"result": "200", "rows": rows }), 200
+
+    except Exception as e:
+        return common.serverError(e)
