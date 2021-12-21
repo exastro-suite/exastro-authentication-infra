@@ -119,6 +119,7 @@ def client_role_setting(realm, client_id):
             # 追加するロールを設定 Set the role to add
             add_role = {
                 "name": role_name,
+                "attributes": role["attributes"],
             }
             # 1 role client role set
             api_keycloak_call.keycloak_client_role_create(realm, client_id, add_role, token)
@@ -149,8 +150,8 @@ def client_role_setting(realm, client_id):
         return common.serverError(e)
 
 
-def client_role_display_name_get(realm, client_id, role_name):
-    """クライアントロール表示名取得 user client role get
+def client_role_info_get(realm, client_id, role_name):
+    """クライアントロール情報取得 client role get
 
     Args:
         realm (str): realm
@@ -169,16 +170,14 @@ def client_role_display_name_get(realm, client_id, role_name):
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
         token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
 
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
         # クライアントロール取得 get client role
-        response = api_keycloak_call.keycloak_client_role_get_by_name(realm, client_id, role_name, token_user, token_password, token_realm_name)
+        response = api_keycloak_call.keycloak_client_role_get(realm, client_id, role_name, token)
         role_info = json.loads(response)
 
-        ret_json = {
-            "name": role_info["name"],
-            "display_name": role_info["attributes"]["display"][0]
-        }
-
-        return jsonify({"result": "200", "rows": ret_json }), 200
+        return jsonify({"result": "200", "rows": role_info }), 200
 
     except Exception as e:
         return common.serverError(e)

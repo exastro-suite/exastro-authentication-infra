@@ -574,8 +574,8 @@ def call_client_role(realm, client_id):
 
 
 @app.route('/<string:realm>/client/<string:client_id>/role/<string:role_name>', methods=['GET'])
-def call_client_role_display_name(realm, client_id, role_name):
-    """クライアントロール表示名取得 呼び出し call client role display name get
+def call_client_role_info(realm, client_id, role_name):
+    """クライアントロール情報 呼び出し call client role info
 
     Args:
         realm (str): realm
@@ -591,8 +591,8 @@ def call_client_role_display_name(realm, client_id, role_name):
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
-            # クライアントロール表示名取得 client role display name get
-            return api_authc_infra_client.client_role_display_name_get(realm, client_id, role_name)
+            # クライアントロール表示名取得 get client role info 
+            return api_authc_infra_client.client_role_info_get(realm, client_id, role_name)
         else:
             # Error
             raise Exception("method not support!")
