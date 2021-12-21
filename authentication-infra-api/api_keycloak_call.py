@@ -261,7 +261,10 @@ def keycloak_role_uesrs_get(realm_name, client_id, role_name, token_user, token_
         globals.logger.debug(request_response.text)
         
         # 取得できない場合は、Exceptionを発行する if it cannot be obtained, an Exception will be thrown
-        if request_response.status_code != 200:
+        if request_response.status_code == 404:
+            # 404の場合は0件で返す In case of 404, return []
+            return []
+        elif request_response.status_code != 200:
             raise Exception("get role users error status:{}, response:{}".format(request_response.status_code, request_response.text))
 
         response_data = json.loads(request_response.text)

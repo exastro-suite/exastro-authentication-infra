@@ -161,37 +161,37 @@ def user_client_role_get(realm, user_id, client_id):
         # user role取得 user role get
         role_info = api_keycloak_call.keycloak_user_role_get(realm, user_id, client_id, token_user, token_password, token_realm_name)
         
-        # json_dict = json.load(role_info)
-        composite_roles = []
-        rows_roles = []
-        rows = []
+        # # json_dict = json.load(role_info)
+        # composite_roles = []
+        # rows_roles = []
+        # rows = []
         
-        for index, item in enumerate(role_info):
-            if index==0:
-                # 子要素だけ取り出すので、親要素はスキップ Since only the child element is fetched, the parent element is skipped
-                pass
-            else:
-                composite_roles.append(
-                    {
-                        "name": item["name"]
-                    }
-                )
+        # for index, item in enumerate(role_info):
+        #     if index==0:
+        #         # 子要素だけ取り出すので、親要素はスキップ Since only the child element is fetched, the parent element is skipped
+        #         pass
+        #     else:
+        #         composite_roles.append(
+        #             {
+        #                 "name": item["name"]
+        #             }
+        #         )
         
-        rows_roles.append(
-            {
-                "name": role_info[0]["name"],
-                "composite_roles": composite_roles
-            }
-        )
+        # rows_roles.append(
+        #     {
+        #         "name": role_info[0]["name"],
+        #         "composite_roles": composite_roles
+        #     }
+        # )
         
-        rows.append(
-            {
-                "user_id": user_id,
-                "roles": rows_roles
-            }
-        )
+        # rows.append(
+        #     {
+        #         "user_id": user_id,
+        #         "roles": rows_roles
+        #     }
+        # )
 
-        return jsonify({"result": "200", "rows": rows }), 200
+        return jsonify({"result": "200", "rows": role_info }), 200
 
     except Exception as e:
         return common.serverError(e)
