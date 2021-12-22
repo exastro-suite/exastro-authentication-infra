@@ -64,7 +64,7 @@ def post_settings():
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL post_settings')
+        globals.logger.debug('CALL {}:from[{}]'.format(inspect.currentframe().f_code.co_name, request.method))
         globals.logger.debug('#' * 50)
 
         # パラメータ情報(JSON形式)
@@ -82,10 +82,11 @@ def post_settings():
         users = payload["users"]
         admin_users = payload["admin_users"]
 
-        client_namespace = payload["client_id"]
-        client_redirect_protocol = payload["client_protocol"]
-        client_redirect_host = payload["client_host"]
-        client_redirect_port = payload["client_port"]
+        clients = payload["clients"]
+        # client_namespace = payload["client_id"]
+        # client_redirect_protocol = payload["client_protocol"]
+        # client_redirect_host = payload["client_host"]
+        # client_redirect_port = payload["client_port"]
 
         token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
@@ -95,7 +96,6 @@ def post_settings():
         #  httpd 設定
         # *-*-*-*-*-*-*-*
         template_file_path = os.environ["CONF_TEMPLATE_PATH"] + "/" + payload["conf_template"]
-        conf_file_name = payload["client_id"] + ".conf"
         crypto_passphrase = os.environ["GATEWAY_CRYPTO_PASSPHRASE"]
         auth_protocol = os.environ["EXASTRO_KEYCLOAK_PROTOCOL"]
         auth_host = os.environ["EXASTRO_KEYCLOAK_HOST"]
@@ -111,6 +111,7 @@ def post_settings():
 
         except Exception as e:
             globals.logger.debug(e.args)
+            raise
 
         # role作成(配列数分処理)
         for role in realm_roles:
@@ -118,6 +119,7 @@ def post_settings():
                 api_keycloak_call.keycloak_realm_role_create(realm_name, role, token_user, token_password, token_realm_name)
             except Exception as e:
                 globals.logger.debug(e.args)
+                raise
 
         # group作成(指定グループ数分処理)
         for group in groups:
@@ -127,6 +129,7 @@ def post_settings():
                     api_keycloak_call.keycloak_group_create(realm_name, group["group_name"], token_user, token_password, token_realm_name)
                 except Exception as e:
                     globals.logger.debug(e.args)
+                    raise
             else:
                 # child group作成
                 try:
@@ -136,6 +139,7 @@ def post_settings():
                     api_keycloak_call.keycloak_group_children_create(realm_name, parent_group["id"], group["group_name"], token_user, token_password, token_realm_name)
                 except Exception as e:
                     globals.logger.debug(e.args)
+                    raise
 
         # group mapping作成(指定グループマッピング数分処理)
         for mappings in group_mappings:
@@ -143,12 +147,14 @@ def post_settings():
                 api_keycloak_call.keycloak_group_add_role_mapping(realm_name, mappings["role_name"], mappings["group_name"], token_user, token_password, token_realm_name)
             except Exception as e:
                 globals.logger.debug(e.args)
+                raise
 
         # default group設定
         try:
             api_keycloak_call.keycloak_default_group_setting(realm_name, default_group_name, token_user, token_password, token_realm_name)
         except Exception as e:
             globals.logger.debug(e.args)
+            raise
 
         # user作成(指定ユーザー数分処理)
         for user in users:
@@ -156,6 +162,7 @@ def post_settings():
                 api_keycloak_call.keycloak_user_create(realm_name, user["user_name"], user["user_password"], user["user_groups"], user["user_realm_roles"], user["user_option"], token_user, token_password, token_realm_name)
             except Exception as e:
                 globals.logger.debug(e.args)
+                raise
 
         # admin user作成(指定ユーザー数分処理)
         for admin_user in admin_users:
@@ -165,44 +172,60 @@ def post_settings():
                 api_keycloak_call.keycloak_admin_user_role_mapping_create("master", "admin", admin_user["user_name"], token_user, token_password, token_realm_name)
             except Exception as e:
                 globals.logger.debug(e.args)
+                raise
 
-        # client作成&client mapper作成
+        # clinet作成(指定clients数分処理)
+        for client_info in clients:
+
+            # client作成&client mapper作成
+            try:
+                client_secret_id = api_keycloak_call.client_create(realm_name, client_info, token_user, token_password, token_realm_name)
+
+            except Exception as e:
+                globals.logger.debug(e.args)
+                raise
+
+            client_namespace = client_info["id"]
+            client_redirect_host = re.sub('^https?://[^/][^/]*/', '', client_info["baseUrl"])
+            ret_url = urlparse(client_info["baseUrl"])
+            client_redirect_port = ret_url.port
+            conf_file_name = client_namespace + ".conf"
+
+            # httpd 設定
+            try:
+                # Configuration file initialization - 設定ファイル初期化
+                api_httpd_call.init_httpd_conf()
+
+                # Create setting directory for client - クライアント用設定ディレクトリ作成
+                api_httpd_call.mkdir_httpd_conf_client(client_namespace)
+
+                with tempfile.TemporaryDirectory() as tempdir:
+                    temp_conf_path="{}/{}".format(tempdir, conf_file_name)
+
+                    # テンプレートファイルへ値埋め込み
+                    api_httpd_call.generate_system_conf(
+                        template_file_path,
+                        temp_conf_path,
+                        client_redirect_host,
+                        client_secret_id,
+                        crypto_passphrase,
+                        client_redirect_port,
+                        auth_port,
+                    )
+
+                    # Move to the configuration file directory - 設定ファイルディレクトリに移動
+                    api_httpd_call.mv_httpd_conf_file(temp_conf_path, None)
+
+            except Exception as e:
+                globals.logger.debug(e.args)
+                raise
+
         try:
-            client_secret_id = api_keycloak_call.client_create(realm_name, client_namespace, client_redirect_protocol, client_redirect_host, client_redirect_port, token_user, token_password, token_realm_name)
-
+            # httpd restart
+            api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name)
         except Exception as e:
             globals.logger.debug(e.args)
-            globals.logger.debug(traceback.format_exc())
-
-        # httpd 設定
-        try:
-            # Configuration file initialization - 設定ファイル初期化
-            api_httpd_call.init_httpd_conf()
-
-            # Create setting directory for client - クライアント用設定ディレクトリ作成
-            api_httpd_call.mkdir_httpd_conf_client(client_namespace)
-
-            with tempfile.TemporaryDirectory() as tempdir:
-                temp_conf_path="{}/{}".format(tempdir, conf_file_name)
-
-                # テンプレートファイルへ値埋め込み
-                api_httpd_call.generate_system_conf(
-                    template_file_path,
-                    temp_conf_path,
-                    client_redirect_host,
-                    client_secret_id,
-                    crypto_passphrase,
-                    client_redirect_port,
-                    auth_port,
-                )
-
-                # Move to the configuration file directory - 設定ファイルディレクトリに移動
-                api_httpd_call.mv_httpd_conf_file(temp_conf_path, None)
-
-                # httpd restart
-                api_httpd_call.gateway_httpd_reload(cm_namespace, deploy_name)
-        except Exception as e:
-            globals.logger.debug(e.args)
+            raise
 
         return jsonify({"result": "200"}), 200
 
@@ -219,9 +242,11 @@ def post_client(realm):
     Returns:
         Response: HTTP Respose
     """
-    globals.logger.debug('CALL post_client:{}'.format(realm))
-
     try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}] realm[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm))
+        globals.logger.debug('#' * 50)
+
         # パラメータ情報(JSON形式)
         payload = request.json.copy()
 
@@ -244,9 +269,48 @@ def post_client(realm):
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
         token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
 
+        # client info 生成 client info generate
+        client = {
+            "id": client_id,
+            "publicClient": False,
+            "redirectUris": [
+                "{}://{}:{}/oidc-redirect/".format(client_redirect_protocol, client_redirect_host, client_port),
+                "{}://{}:{}/".format(client_redirect_protocol, client_redirect_host, client_port),
+            ],
+            "baseUrl": "{}://{}:{}/oidc-redirect/".format(client_redirect_protocol, client_redirect_host, client_port),
+            "webOrigins": [],
+            "protocolMappers": [
+                {
+                    "name": "{}-map-role".format(client_namespace),
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-realm-role-mapper",
+                    "consentRequired": False,
+                    "config": {
+                        "id.token.claim": True,
+                        "access.token.claim": True,
+                        "claim.name": "epoch-role",
+                        "multivalued": True,
+                        "userinfo.token.claim": True,
+                    }
+                },
+                # {
+                #     "name": "epoch-system-client-map-role",
+                #     "protocolMapper": "oidc-usermodel-client-role-mapper",
+                #     "consentRequired": False,
+                #     "config": {
+                #         "id.token.claim": True,
+                #         "access.token.claim": True,
+                #         "claim.name": "epoch-role",
+                #         "multivalued": True,
+                #         "userinfo.token.claim": True,
+                #     }
+                # },
+            ],
+        }
+
         # client作成&client mapper作成
         try:
-            client_secret_id = api_keycloak_call.client_create(realm, client_namespace, client_redirect_protocol, client_redirect_host, client_port, token_user, token_password, token_realm_name)
+            client_secret_id = api_keycloak_call.client_create(realm, client, token_user, token_password, token_realm_name)
 
         except Exception as e:
             globals.logger.debug(e.args)
@@ -316,7 +380,7 @@ def post_client_route(realm, client_id):
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL post_client_route')
+        globals.logger.debug('CALL {}:from[{}] realm[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, client_id))
         globals.logger.debug('#' * 50)
 
         payload = request.json.copy()
@@ -343,9 +407,11 @@ def apply_settings():
     Returns:
         Response: HTTP Respose
     """
-    globals.logger.debug('CALL apply_settings:')
-
     try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}]'.format(inspect.currentframe().f_code.co_name, request.method))
+        globals.logger.debug('#' * 50)
+
         namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
 

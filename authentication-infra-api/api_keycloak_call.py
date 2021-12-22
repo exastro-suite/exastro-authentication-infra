@@ -653,7 +653,7 @@ def keycloak_admin_user_role_mapping_create(realm_name, role_name, user_name, to
 
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL keycloak_admin_user_role_mapping_create: realm_name:{}, role_name:{}, user_name:{}'.format(realm_name, role_name, user_name))
+        globals.logger.debug('CALL {}: realm_name:[{}], role_name:[{}], user_name:[{}]'.format(inspect.currentframe().f_code.co_name, realm_name, role_name, user_name))
         globals.logger.debug('------------------------------------------------------')
 
         # role情報取得
@@ -752,15 +752,12 @@ def keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, cli
         raise
 
 
-def client_create(realm_name, namespace, redirect_protocol, redirect_host, redirect_port, token_user, token_password, token_realm_name):
+def client_create(realm_name, client, token_user, token_password, token_realm_name):
     """Client生成
 
     Args:
         realm_name (str): realm name
-        namespace (str): ツールのnamespace
-        redirect_protocol (str): ツールのprotocol
-        redirect_host (str): ツールのhost
-        redirect_port (str): ツールのport
+        client (dict): client info.
         toekn_user (str): token 取得用 user name
         toekn_password (str): token 取得用 user password
         toekn_realm_name (str): token 取得用 realm name
@@ -769,29 +766,13 @@ def client_create(realm_name, namespace, redirect_protocol, redirect_host, redir
         str: secret id
     """
     try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: client_id[{}]'.format(inspect.currentframe().f_code.co_name, client["id"]))
+        globals.logger.debug('------------------------------------------------------')
 
         # client作成&client mapper作成
         try:
-            client_opt = {
-                "protocol": "openid-connect",
-                "publicClient": False,
-                "redirectUris": [
-                    "{}://{}:{}/oidc-redirect/".format(redirect_protocol, redirect_host, redirect_port),
-                    "{}://{}:{}/".format(redirect_protocol, redirect_host, redirect_port)
-                ],
-                "baseUrl": "{}://{}:{}/".format(redirect_protocol, redirect_host, redirect_port),
-                "webOrigins": [],
-            }
-            keycloak_client_create(realm_name, namespace, client_opt, token_user, token_password, token_realm_name)
-
-            mapping_config = {
-                "id.token.claim": True,
-                "access.token.claim": True,
-                "claim.name": "epoch-role",
-                "multivalued": True,
-                "userinfo.token.claim": True,
-            }
-            keycloak_client_mapping_create(realm_name, namespace, "epoch-system-map-role", client_opt["protocol"], mapping_config, token_user, token_password, token_realm_name)
+            keycloak_client_create(realm_name, client, token_user, token_password, token_realm_name)
 
         except Exception as e:
             globals.logger.debug(e.args)
@@ -799,7 +780,7 @@ def client_create(realm_name, namespace, redirect_protocol, redirect_host, redir
         # client secret取得
         try:
             # client secret取得
-            secret_id = keycloak_client_secret_get(realm_name, namespace, token_user, token_password, token_realm_name)
+            secret_id = keycloak_client_secret_get(realm_name, client["id"], token_user, token_password, token_realm_name)
         except Exception as e:
             globals.logger.debug(e.args)
             raise
@@ -812,12 +793,71 @@ def client_create(realm_name, namespace, redirect_protocol, redirect_host, redir
         raise
 
 
-def keycloak_client_create(realm_name, client_name, client_opt, token_user, token_password, token_realm_name):
+# def client_create(realm_name, namespace, redirect_protocol, redirect_host, redirect_port, token_user, token_password, token_realm_name):
+#     """Client生成
+
+#     Args:
+#         realm_name (str): realm name
+#         namespace (str): ツールのnamespace
+#         redirect_protocol (str): ツールのprotocol
+#         redirect_host (str): ツールのhost
+#         redirect_port (str): ツールのport
+#         toekn_user (str): token 取得用 user name
+#         toekn_password (str): token 取得用 user password
+#         toekn_realm_name (str): token 取得用 realm name
+
+#     Returns:
+#         str: secret id
+#     """
+#     try:
+
+#         # client作成&client mapper作成
+#         try:
+#             client_opt = {
+#                 "protocol": "openid-connect",
+#                 "publicClient": False,
+#                 "redirectUris": [
+#                     "{}://{}:{}/oidc-redirect/".format(redirect_protocol, redirect_host, redirect_port),
+#                     "{}://{}:{}/".format(redirect_protocol, redirect_host, redirect_port)
+#                 ],
+#                 "baseUrl": "{}://{}:{}/".format(redirect_protocol, redirect_host, redirect_port),
+#                 "webOrigins": [],
+#             }
+#             keycloak_client_create(realm_name, namespace, client_opt, token_user, token_password, token_realm_name)
+
+#             mapping_config = {
+#                 "id.token.claim": True,
+#                 "access.token.claim": True,
+#                 "claim.name": "epoch-role",
+#                 "multivalued": True,
+#                 "userinfo.token.claim": True,
+#             }
+#             keycloak_client_mapping_create(realm_name, namespace, "epoch-system-map-role", client_opt["protocol"], mapping_config, token_user, token_password, token_realm_name)
+
+#         except Exception as e:
+#             globals.logger.debug(e.args)
+
+#         # client secret取得
+#         try:
+#             # client secret取得
+#             secret_id = keycloak_client_secret_get(realm_name, namespace, token_user, token_password, token_realm_name)
+#         except Exception as e:
+#             globals.logger.debug(e.args)
+#             raise
+
+#         return secret_id
+
+#     except Exception as e:
+#         globals.logger.debug(e.args)
+#         globals.logger.debug(traceback.format_exc())
+#         raise
+
+
+def keycloak_client_create(realm_name, client, token_user, token_password, token_realm_name):
     """client作成
     Args:
         realm_name (str): realm name
-        client_name (str): client name
-        client_opt (dict): client parameter option
+        client (dict): client info.
         toekn_user (str): token 取得用 user name
         toekn_password (str): token 取得用 user password
         toekn_realm_name (str): token 取得用 realm name
@@ -827,7 +867,7 @@ def keycloak_client_create(realm_name, client_name, client_opt, token_user, toke
 
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL keycloak_client_create: client_name:{}'.format(client_name))
+        globals.logger.debug('CALL {}: client_id[{}]'.format(inspect.currentframe().f_code.co_name, client["id"]))
         globals.logger.debug('------------------------------------------------------')
 
         # 呼び出し先設定
@@ -837,14 +877,7 @@ def keycloak_client_create(realm_name, client_name, client_opt, token_user, toke
             "Content-Type": "application/json",
             "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
         }
-        data_para = {
-            "id": client_name,
-        }
-
-        # その他のオプション値はすべてそのまま受け渡す
-        if client_opt is not None:
-            for key in client_opt.keys():
-                data_para[key] = client_opt[key]
+        data_para = client
 
         globals.logger.debug("client post送信")
         globals.logger.debug(data_para)
