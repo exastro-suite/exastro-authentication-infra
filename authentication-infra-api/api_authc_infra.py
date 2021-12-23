@@ -186,7 +186,6 @@ def post_settings():
                 raise
 
             client_namespace = client_info["id"]
-            client_redirect_host = re.sub('^https?://([^/:][^/:]*).*/.*$', '\\1', client_info["baseUrl"])
             ret_url = urlparse(client_info["baseUrl"])
             client_redirect_host = ret_url.hostname
             client_redirect_port = ret_url.port
