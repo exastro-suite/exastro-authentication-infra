@@ -45,7 +45,7 @@ globals.init(app)
 
 
 def curret_user_get():
-    """カレントユーザ情報取得
+    """カレントユーザ情報取得 get current user info
 
     Returns:
         Response: HTTP Respose
@@ -55,23 +55,34 @@ def curret_user_get():
         globals.logger.debug('CALL curret_user_get')
         globals.logger.debug('#' * 50)
 
-        # globals.logger.debug('header:{}'.format(request.headers))
-
         token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
         token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
         token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
 
-        # realm_nameの取得
+        # realm_nameの取得 get role name
         realm_name = api_authc_common.get_current_realm(request.headers)
 
-        # user_idの取得
+        # user_idの取得 get user id
         user_id = api_authc_common.get_current_user(request.headers)
 
-        # user_idをもとにKeyCloakのuser情報を取得する
+        # user_idをもとにKeyCloakのuser情報を取得する Get KeyCloak user info based on user_id
         user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
 
         # 1件目使用 first data only use
         user_info = user_info[0]
+
+        # role情報の取得 get role info
+        role_info = user_role_mapping_get(realm_name, user_id)
+        
+        role_json = json.loads(role_info["rows"])
+        
+        role_row = []
+        for role in role_json["clientMappings"]["epoch-system"]["mappings"]:
+
+            role_row.append({
+                "role_id": role["id"],
+                "role_name": role["name"]                
+            })
 
         ret_json = {
             "id": user_id,
@@ -80,6 +91,7 @@ def curret_user_get():
             "firstName": user_info["firstName"],
             "lastName": user_info["lastName"],
             "email": user_info["email"],
+            "role": role_row
         }
 
         return jsonify({"result": "200", "info": ret_json}), 200
@@ -194,6 +206,36 @@ def user_client_role_get(realm, user_id, client_id):
         role_info = api_keycloak_call.keycloak_user_role_get(realm, user_id, client_id, token_user, token_password, token_realm_name)
 
         return jsonify({"result": "200", "rows": role_info }), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
+def user_role_mapping_get(realm, user_id):
+    """ユーザーロールマッピング取得 get user role mapping
+
+    Args:
+        realm (str): realm
+        user_id (str): user id
+
+    Returns:
+        [type]: [description]
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:realm[{}] user_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id))
+        globals.logger.debug('#' * 50)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
+        # ユーザーロールマッピング取得 get user role mapping
+        role_mapping_info = api_keycloak_call.keycloak_user_role_mapping_get(realm, user_id, token)
+
+        return {"result": "200", "rows": role_mapping_info }
 
     except Exception as e:
         return common.serverError(e)
