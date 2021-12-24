@@ -752,7 +752,7 @@ def keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, cli
         raise
 
 
-def keycloak_user_client_role_mapping_detele(realm_name, user_id, client_id, client_roles, token):
+def keycloak_user_client_role_mapping_delete(realm_name, user_id, client_id, client_roles, token):
     """ユーザークライアントロールマッピング削除 user client role-mapping delete
 
     Args:

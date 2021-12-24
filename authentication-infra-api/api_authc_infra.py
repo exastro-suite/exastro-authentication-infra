@@ -544,13 +544,13 @@ def call_user_role_setting(realm, user_id, client_id):
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
-            # クライアントロール情報取得
+            # クライアントロール情報取得 Get client role info.
             return api_authc_infra_user.user_client_role_get(realm, user_id, client_id)
         elif request.method == 'POST':
-            # クライアントロール設定
+            # クライアントロール設定 Client role settings
             return api_authc_infra_user.user_client_role_setting(realm, user_id, client_id)
         elif request.method == 'DELETE':
-            # クライアントロール設定
+            # クライアントロール削除 Delete client role
             return api_authc_infra_user.user_client_role_delete(realm, user_id, client_id)
         else:
             # Error
