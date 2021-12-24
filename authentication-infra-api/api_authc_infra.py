@@ -493,6 +493,7 @@ def call_refresh_session_js():
             return new Promise((resolve, reject) => {
                 var ifra = document.createElement('IFRAME');
                 ifra.setAttribute('src', "/api/user/refresh_session");
+                ifra.style.display = "none";
                 document.body.appendChild(ifra);
                 var is_finish = function() {
                     try {
