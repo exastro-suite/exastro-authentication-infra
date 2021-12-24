@@ -226,7 +226,7 @@ def user_client_role_setting(realm, user_id, client_id):
         return common.serverError(e)
 
 
-def user_client_role_detele(realm, user_id, client_id):
+def user_client_role_delete(realm, user_id, client_id):
     """ユーザークライアントロール削除 user client role delete
 
     Args:
