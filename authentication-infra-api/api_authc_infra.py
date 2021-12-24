@@ -526,6 +526,33 @@ def call_refreshed_session():
     return response
 
 
+
+@app.route('/<string:realm>/user', methods=['GET'])
+def call_users(realm):
+    """ユーザー呼び出し call users
+
+    Args:
+        realm (str): realm
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:from[{}] realm[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm))
+        globals.logger.debug('#' * 50)
+
+        if request.method == 'GET':
+            # ユーザー一覧取得 Get users
+            return api_authc_infra_user.users_get(realm)
+        else:
+            # Error
+            raise Exception("method not support!")
+
+    except Exception as e:
+        return common.server_error(e)
+
+
 @app.route('/<string:realm>/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST','DELETE'])
 def call_user_role_setting(realm, user_id, client_id):
     """ユーザークライアントロール設定呼び出し call user client role

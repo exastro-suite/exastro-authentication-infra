@@ -664,6 +664,9 @@ def keycloak_admin_user_role_mapping_create(realm_name, role_name, user_name, to
         user_info = keycloak_user_get(realm_name, user_name, token_user, token_password, token_realm_name)
         globals.logger.debug(user_info)
 
+        # 1件目使用 first data only use
+        user_info = user_info[0]
+
         header_para = {
             "Content-Type": "application/json",
             "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
@@ -1251,7 +1254,7 @@ def keycloak_user_get(realm_name, user_name, token_user, token_password, token_r
     """ユーザ情報取得
     Args:
         realm_name (str): realm name
-        user_name (str): user name
+        user_name (str): user name (Noneの時はすべて取得 None is all user)
         toekn_user (str): token 取得用 user name
         toekn_password (str): token 取得用 user password
         toekn_realm_name (str): token 取得用 realm name
@@ -1274,7 +1277,10 @@ def keycloak_user_get(realm_name, user_name, token_user, token_password, token_r
 
         globals.logger.debug("user get")
         # ユーザ情報取得
-        request_response = requests.get("{}/auth/admin/realms/{}/users?search={}".format(api_url, realm_name, user_name), headers=header_para)
+        if user_name is None:
+            request_response = requests.get("{}/auth/admin/realms/{}/users".format(api_url, realm_name), headers=header_para)
+        else:
+            request_response = requests.get("{}/auth/admin/realms/{}/users?search={}".format(api_url, realm_name, user_name), headers=header_para)
         globals.logger.debug(request_response.text)
         
         # 取得できない場合は、Exceptionを発行する
@@ -1284,7 +1290,7 @@ def keycloak_user_get(realm_name, user_name, token_user, token_password, token_r
         
         user_info = json.loads(request_response.text)
         # 正常応答
-        return user_info[0]
+        return user_info
 
     except Exception as e:
         globals.logger.debug(e.args)

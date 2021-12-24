@@ -70,6 +70,9 @@ def curret_user_get():
         # user_idをもとにKeyCloakのuser情報を取得する
         user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
 
+        # 1件目使用 first data only use
+        user_info = user_info[0]
+
         ret_json = {
             "id": user_id,
             "username": user_info["username"],
@@ -120,6 +123,9 @@ def curret_user_password_change():
         # user_idをもとにKeyCloakのuser情報を取得する
         user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
 
+        # 1件目使用 first data only use
+        user_info = user_info[0]
+
         # client_secretの取得
         client_secret = api_keycloak_call.keycloak_client_secret_get(realm_name, client_name, token_user, token_password, token_realm_name)
 
@@ -138,6 +144,32 @@ def curret_user_password_change():
     except Exception as e:
         return common.serverError(e)
 
+def users_get(realm):
+    """ユーザー取得 users get
+
+    Args:
+        realm (str): realm
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:realm[{}]'.format(inspect.currentframe().f_code.co_name, realm))
+        globals.logger.debug('#' * 50)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # user 取得 user get
+        users = api_keycloak_call.keycloak_user_get(realm, None, token_user, token_password, token_realm_name)
+
+        return jsonify({"result": "200", "rows": users }), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
 def user_client_role_get(realm, user_id, client_id):
     """ユーザークライアントロール取得 user client role get
 
@@ -147,7 +179,7 @@ def user_client_role_get(realm, user_id, client_id):
         client_id (str): client id
 
     Returns:
-        [type]: [description]
+        Response: HTTP Respose
     """
     try:
         globals.logger.debug('#' * 50)

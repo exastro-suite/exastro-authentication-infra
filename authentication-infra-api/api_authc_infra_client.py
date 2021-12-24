@@ -208,13 +208,14 @@ def client_role_users_get(realm, client_id, role_name):
 
         rows = []
         for user_info in role_users_info:
-            rows = {
+            row = {
                 "user_id": user_info["id"],
                 "user_name": user_info["username"],
                 "first_name": user_info["firstName"],
                 "last_name": user_info["lastName"],
                 "email": user_info["email"]
             }
+            rows.append(row)
 
         return jsonify({"result": "200", "rows": rows }), 200
 
