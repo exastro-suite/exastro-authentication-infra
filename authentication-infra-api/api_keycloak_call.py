@@ -801,6 +801,51 @@ def keycloak_user_client_role_mapping_detele(realm_name, user_id, client_id, cli
         raise
 
 
+def keycloak_user_role_mapping_get(realm_name, user_id, token):
+    """ユーザーロールマッピング取得 get user client role-mapping
+
+    Args:
+        realm_name (str): realm name
+        user_id (str): user id
+        toekn (str): keycloak access token
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: realm_name[{}] user_id[{}] '.format(inspect.currentframe().f_code.co_name, realm_name, user_id))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        globals.logger.debug("user role-mapping get 送信")
+        # 呼び出し先設定 requests setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        request_response = requests.get("{}/auth/admin/realms/{}/users/{}/role-mappings".format(api_url, realm_name, user_id), headers=header_para)
+
+        globals.logger.debug(request_response.text)
+
+        # 正常終了以外はエラー not normal end to error
+        if request_response.status_code != 200:
+            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_name, request_response.status_code, request_response.text))
+
+        globals.logger.debug("user role-mapping get Succeed!")
+
+        # 正常応答 normal return
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+
 def client_create(realm_name, client, token_user, token_password, token_realm_name):
     """Client生成
 
