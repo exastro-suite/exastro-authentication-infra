@@ -430,21 +430,26 @@ def apply_settings():
     except Exception as e:
         return common.serverError(e)
 
-@app.route('/user/current', methods=['GET'])
-def call_curret_user():
+# @app.route('/user/current', methods=['GET'])
+@app.route('/<string:realm>/user/<string:user_id>', methods=['GET'])
+def call_curret_user(realm, user_id):
     """カレントユーザー処理呼び出し call current_user
+
+    Args:
+        realm (str): realm
+        user_id (str): user id
 
     Returns:
         Response: HTTP Respose
     """
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:from[{}]'.format(inspect.currentframe().f_code.co_name, request.method))
+        globals.logger.debug('CALL {}:from[{}] realm[{}] user_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, user_id))
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
             # クライアントロール設定
-            return api_authc_infra_user.curret_user_get()
+            return api_authc_infra_user.curret_user_get(realm, user_id)
         else:
             # Error
             raise Exception("method not support!")
