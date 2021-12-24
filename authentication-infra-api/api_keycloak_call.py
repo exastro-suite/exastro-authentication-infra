@@ -752,6 +752,55 @@ def keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, cli
         raise
 
 
+def keycloak_user_client_role_mapping_detele(realm_name, user_id, client_id, client_roles, token):
+    """ユーザークライアントロールマッピング削除 user client role-mapping delete
+
+    Args:
+        realm_name (str): realm name
+        user_id (str): user id
+        client_id (str): client id
+        client_roles (array): client roles array
+        toekn (str): token
+
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: user_id[{}] client_id[{}] client_roles[{}]'.format(inspect.currentframe().f_code.co_name, user_id, client_id, client_roles))
+        globals.logger.debug('------------------------------------------------------')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        data_para = client_roles
+
+        globals.logger.debug("user client role-mapping delete send")
+        # 呼び出し先設定 requests setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        request_response = requests.delete("{}/auth/admin/realms/{}/users/{}/role-mappings/clients/{}".format(api_url, realm_name, user_id, client_id), headers=header_para, data=json.dumps(data_para))
+
+        globals.logger.debug(request_response.text)
+
+        # 正常終了以外はエラー not normal end to error
+        if request_response.status_code != 204:
+            raise Exception("{} error status:{}, response:{}".format(inspect.currentframe().f_code.co_name, request_response.status_code, request_response.text))
+
+        globals.logger.debug("user client role-mapping delete Succeed!")
+
+        # 正常応答 normal return
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+
 def client_create(realm_name, client, token_user, token_password, token_realm_name):
     """Client生成
 

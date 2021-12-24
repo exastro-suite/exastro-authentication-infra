@@ -160,36 +160,6 @@ def user_client_role_get(realm, user_id, client_id):
 
         # user role取得 user role get
         role_info = api_keycloak_call.keycloak_user_role_get(realm, user_id, client_id, token_user, token_password, token_realm_name)
-        
-        # # json_dict = json.load(role_info)
-        # composite_roles = []
-        # rows_roles = []
-        # rows = []
-        
-        # for index, item in enumerate(role_info):
-        #     if index==0:
-        #         # 子要素だけ取り出すので、親要素はスキップ Since only the child element is fetched, the parent element is skipped
-        #         pass
-        #     else:
-        #         composite_roles.append(
-        #             {
-        #                 "name": item["name"]
-        #             }
-        #         )
-        
-        # rows_roles.append(
-        #     {
-        #         "name": role_info[0]["name"],
-        #         "composite_roles": composite_roles
-        #     }
-        # )
-        
-        # rows.append(
-        #     {
-        #         "user_id": user_id,
-        #         "roles": rows_roles
-        #     }
-        # )
 
         return jsonify({"result": "200", "rows": role_info }), 200
 
@@ -245,6 +215,73 @@ def user_client_role_setting(realm, user_id, client_id):
 
         # user client role set
         api_keycloak_call.keycloak_user_client_role_mapping_create(realm, user_id, client_id, roles, token)
+
+        ret = {
+            "result": "200",
+        }
+
+        return jsonify(ret), 200
+
+    except Exception as e:
+        return common.serverError(e)
+
+
+def user_client_role_detele(realm, user_id, client_id):
+    """ユーザークライアントロール削除 user client role delete
+
+    Args:
+        realm (str): realm
+        user_id (str): user id
+        client_id (str): client id
+
+    Request: json
+        {
+            "roles" : [
+                "name": [role name],
+            ]
+        }
+
+    Returns:
+        Response: HTTP Respose
+    """
+    try:
+        globals.logger.debug('#' * 50)
+        globals.logger.debug('CALL {}:realm[{}] user_id[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, realm, user_id, client_id))
+        globals.logger.debug('#' * 50)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # 引数を展開 Expand arguments
+        payload = request.json.copy()
+
+        globals.logger.debug(payload)
+
+        token_user = os.environ["EXASTRO_KEYCLOAK_USER"]
+        token_password = os.environ["EXASTRO_KEYCLOAK_PASSWORD"]
+        token_realm_name = os.environ["EXASTRO_KEYCLOAK_MASTER_REALM"]
+
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
+        roles = []
+        # ユーザーから削除するロールを繰り返し処理する Iterate over the role you want to delete from the user
+        for role in payload["roles"]:
+            role_name = role["name"]
+            # role情報取得 get role info. 
+            # role idが登録する際に必要なので取得する Get the role id as it is needed when registering
+            role_info = api_keycloak_call.keycloak_client_role_get(realm, client_id, role_name, token)
+            role_info = json.loads(role_info)
+            # 削除するロールを設定 Set the role to delete
+            add_role = {
+                "id": role_info["id"],
+                "name": role_name,
+            }
+            roles.append(add_role)
+
+        # user client role delete
+        api_keycloak_call.keycloak_user_client_role_mapping_delete(realm, user_id, client_id, roles, token)
 
         ret = {
             "result": "200",

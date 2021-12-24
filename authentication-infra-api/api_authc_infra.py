@@ -272,6 +272,7 @@ def post_client(realm):
         # client info 生成 client info generate
         client = {
             "id": client_id,
+            "protocol": "openid-connect",
             "publicClient": False,
             "redirectUris": [
                 "{}://{}:{}/oidc-redirect/".format(client_redirect_protocol, client_redirect_host, client_port),
@@ -525,7 +526,7 @@ def call_refreshed_session():
     return response
 
 
-@app.route('/<string:realm>/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST'])
+@app.route('/<string:realm>/user/<string:user_id>/roles/<string:client_id>', methods=['GET','POST','DELETE'])
 def call_user_role_setting(realm, user_id, client_id):
     """ユーザークライアントロール設定呼び出し call user client role
 
@@ -548,6 +549,9 @@ def call_user_role_setting(realm, user_id, client_id):
         elif request.method == 'POST':
             # クライアントロール設定
             return api_authc_infra_user.user_client_role_setting(realm, user_id, client_id)
+        elif request.method == 'DELETE':
+            # クライアントロール設定
+            return api_authc_infra_user.user_client_role_delete(realm, user_id, client_id)
         else:
             # Error
             raise Exception("method not support!")
