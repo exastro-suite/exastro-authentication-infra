@@ -621,8 +621,8 @@ def call_role_users_get(realm, client_id, role_name):
         return common.server_error(e)
 
 
-@app.route('/<string:realm>/client/<string:client_id>', methods=['GET'])
-def call_client_port(realm, client_id):
+@app.route('/client/<string:client_id>', methods=['GET'])
+def call_client_port(client_id):
     """client port情報呼び出し call client port
 
     Args:
@@ -635,12 +635,12 @@ def call_client_port(realm, client_id):
 
     try:
         globals.logger.debug('#' * 50)
-        globals.logger.debug('CALL {}:from[{}] realm[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, realm, client_id))
+        globals.logger.debug('CALL {}:from[{}] client_id[{}]'.format(inspect.currentframe().f_code.co_name, request.method, client_id))
         globals.logger.debug('#' * 50)
 
         if request.method == 'GET':
             # クライアントポート取得 get client port
-            return api_authc_infra_client.get_client_port(realm, client_id)
+            return api_authc_infra_client.get_client_port(client_id)
         else:
             # Error
             raise Exception("method not support!")
