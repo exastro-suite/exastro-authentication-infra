@@ -278,7 +278,7 @@ def post_client(realm):
                 "{}://{}:{}/oidc-redirect/".format(client_redirect_protocol, client_redirect_host, client_port),
                 "{}://{}:{}/".format(client_redirect_protocol, client_redirect_host, client_port),
             ],
-            "baseUrl": "{}://{}:{}/oidc-redirect/".format(client_redirect_protocol, client_redirect_host, client_port),
+            "baseUrl": "{}://{}:{}/".format(client_redirect_protocol, client_redirect_host, client_port),
             "webOrigins": [],
             "protocolMappers": [
                 {
