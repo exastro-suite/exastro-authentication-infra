@@ -127,12 +127,12 @@ def client_role_setting(realm, client_id):
         # tokenの取得 get toekn 
         token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
         # 続いてロールの配下がある場合は、その要素を追加する Next, if there is a subordinate of the role, add that element
-        composite_roles = []
         # ロール数分繰り返し処理する Repeat for the number of rolls
         for role in payload["roles"]:
             role_name = role["name"]
             # 要素があれば子供のロール情報を取得して設定する If there is an element, get and set the child's role information
             if len(role["composite_roles"]) > 0:
+                composite_roles = []
                 for composite_role in role["composite_roles"]:
                     role_info = api_keycloak_call.keycloak_client_role_get(realm, client_id, composite_role, token)
                     composite_roles.append(json.loads(role_info))
