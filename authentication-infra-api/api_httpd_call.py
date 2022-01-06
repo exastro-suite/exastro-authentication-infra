@@ -84,7 +84,7 @@ def generate_system_conf(template_path, conf_dest_path, hostname, client_secret,
         raise
 
 def generate_client_conf(template_file_path, conf_dest_path, realm, crypto_passphrase, auth_host, auth_protocol, auth_port,
-                            client_host, client_protocol, client_port, client_id, client_secret, backend_url):
+                            client_host, client_protocol, client_port, client_id, client_secret, backend_url, require_claim):
     """Generate Client Apcahe conf
 
     Args:
@@ -101,6 +101,7 @@ def generate_client_conf(template_file_path, conf_dest_path, realm, crypto_passp
         client_id (str): client id
         client_secret (str): client Secret
         backend_url (str): backend_url
+        require_claim (str): require_claim
     """
     try:
         globals.logger.debug('------------------------------------------------------')
@@ -127,7 +128,8 @@ def generate_client_conf(template_file_path, conf_dest_path, realm, crypto_passp
             client_port = client_port,
             client_id = client_id,
             client_secret = client_secret,
-            backend_url = backend_url
+            backend_url = backend_url,
+            require_claim = require_claim,
         )
 
         # ファイル出力
@@ -177,58 +179,6 @@ def generate_conf(template_file_path, conf_dest_path, render_params):
         globals.logger.debug(traceback.format_exc())
         raise
 
-
-# def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
-#     """configmap適用
-
-#     Args:
-#         cm_name (str): configmap name
-#         cm_namespace (str): configmap namespace
-#         conf_file_path (arr): configmapに含める設定ファイルのパス
-#     """
-#     try:
-#         globals.logger.debug('------------------------------------------------------')
-#         globals.logger.debug('CALL apply_configmap_file: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
-#         globals.logger.debug('------------------------------------------------------')
-
-#         # 登録済みのConfigMap定義を取得
-#         cm_yaml = subprocess.check_output(["kubectl", "get", "cm", cm_name, "-n", cm_namespace, "-o", "yaml"], stderr=subprocess.STDOUT)
-
-#         cm_yaml_dict = yaml.safe_load(cm_yaml.decode('utf-8'))
-
-#         # 不要な要素の削除
-#         if "annotations" in cm_yaml_dict["metadata"]:
-#             del cm_yaml_dict["metadata"]["annotations"]
-
-#         # 指定されたconfファイルを読み取り、そのファイル定義部分を差し替え
-#         fp = open(conf_file_path, "r")
-#         conf_text = fp.read()
-#         fp.close()
-
-#         cm_yaml_dict["data"][os.path.basename(conf_file_path)] = conf_text
-
-#         # 差し替え後の定義情報をyaml化
-#         cm_yaml_new = yaml.dump(cm_yaml_dict)
-
-#         with tempfile.TemporaryDirectory() as tempdir, open(os.path.join(tempdir, "configmap.yaml"), "w") as configmap_yaml_fp:
-#             configmap_yaml_path = configmap_yaml_fp.name
-
-#             # ConfigMapのyaml定義ファイルの生成
-#             configmap_yaml_fp.write(cm_yaml_new)
-#             configmap_yaml_fp.close()
-
-#             # ConfigMapのyaml定義の適用
-#             result = subprocess.check_output(["kubectl", "apply", "-f", configmap_yaml_path], stderr=subprocess.STDOUT)
-#             globals.logger.debug(result.decode('utf-8'))
-
-#         globals.logger.debug("apply_configmap_file Succeed!")
-
-#     except subprocess.CalledProcessError as e:
-#         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
-#         globals.logger.debug("returncode:{}".format(e.returncode))
-#         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
-#         raise
-
 def init_httpd_conf():
     """Initialize httpd config file - httpd confファイル初期化
     """
@@ -245,6 +195,7 @@ def init_httpd_conf():
             os.remove(os.path.join(path, item))
         else:
             shutil.rmtree(os.path.join(path, item))
+
 
 def mkdir_httpd_conf_client(client_id):
     """Create directory for client settings - クライアント設定用ディレクトリ作成
@@ -384,58 +335,6 @@ def create_nodeport(template_path, client_id, gw_namespace, gw_deploy_name):
         raise
 
 
-# def apply_configmap_file(cm_name, cm_namespace, conf_file_path):
-#     """configmap適用
-
-#     Args:
-#         cm_name (str): configmap name
-#         cm_namespace (str): configmap namespace
-#         conf_file_path (arr): configmapに含める設定ファイルのパス
-#     """
-#     try:
-#         globals.logger.debug('------------------------------------------------------')
-#         globals.logger.debug('CALL apply_configmap_files: cm_name:{}, cm_namespace:{}'.format(cm_name, cm_namespace))
-#         globals.logger.debug('------------------------------------------------------')
-
-#         # 登録済みのConfigMap定義を取得
-#         cm_yaml = subprocess.check_output(["kubectl", "get", "cm", cm_name, "-n", cm_namespace, "-o", "yaml"], stderr=subprocess.STDOUT)
-
-#         cm_yaml_dict = yaml.safe_load(cm_yaml.decode('utf-8'))
-
-#         # 不要な要素の削除
-#         if "annotations" in cm_yaml_dict["metadata"]:
-#             del cm_yaml_dict["metadata"]["annotations"]
-
-#         # 指定されたconfファイルを読み取り、そのファイル定義部分を差し替え
-#         fp = open(conf_file_path, "r")
-#         conf_text = fp.read()
-#         fp.close()
-
-#         cm_yaml_dict["data"][os.path.basename(conf_file_path)] = conf_text
-
-#         # 差し替え後の定義情報をyaml化
-#         cm_yaml_new = yaml.dump(cm_yaml_dict)
-
-#         with tempfile.TemporaryDirectory() as tempdir, open(os.path.join(tempdir, "configmap.yaml"), "w") as configmap_yaml_fp:
-#             configmap_yaml_path = configmap_yaml_fp.name
-
-#             # ConfigMapのyaml定義ファイルの生成
-#             configmap_yaml_fp.write(cm_yaml_new)
-#             configmap_yaml_fp.close()
-
-#             # ConfigMapのyaml定義の適用
-#             result = subprocess.check_output(["kubectl", "apply", "-f", configmap_yaml_path], stderr=subprocess.STDOUT)
-#             globals.logger.debug(result.decode('utf-8'))
-
-#         globals.logger.debug("apply_configmap_files Succeed!")
-
-#     except subprocess.CalledProcessError as e:
-#         globals.logger.debug("ERROR: except subprocess.CalledProcessError")
-#         globals.logger.debug("returncode:{}".format(e.returncode))
-#         globals.logger.debug("output:\n{}\n".format(e.output.decode('utf-8')))
-#         raise
-
-
 def gateway_httpd_reload(namespace, deploy_name):
     """gateway-httpd graceful reload
 
@@ -462,37 +361,6 @@ def gateway_httpd_reload(namespace, deploy_name):
                 # 実行中(Running)のPODを処理する
                 for target_pod_statuses in target_pod["status"]["containerStatuses"]:
                     if target_pod_statuses["ready"] == True:
-                        # ready状態のPODを処理する
-
-                        # timeout_cnt = 1
-                        # while True:
-                        #     # confファイルが生成されるまで後続の処理をしない
-                        #     globals.logger.debug("[START]: httpd conf exist check :" + target_pod["metadata"]["name"])
-                            
-                        #     # 生成したconfファイルが存在する場合は1、存在しない場合は0を返す
-                        #     file_check_result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "test -e /etc/httpd/conf.d/exastroSettings/" + conf_file_name + "&& echo 1 || echo 0"], stderr=subprocess.STDOUT)
-
-                        #     # 存在チェックの結果に混在している、改行コードを削除
-                        #     file_check_result = file_check_result.decode('utf-8').replace('\n', '')
-
-                        #     if file_check_result == "1":
-                        #         globals.logger.debug("conf file created")
-                        #         break
-                        #     else:
-                        #         globals.logger.debug("conf file creating...")
-                        #         time.sleep(5)
-                        #         timeout_cnt += 1
-                                
-                        #         if timeout_cnt > 60:
-                        #             # 5分経過したらtimeoutで失敗
-                        #             globals.logger.debug("conf file create failed timeout")
-                        #             raise
-
-                        # confファイルを読み込み
-                        # globals.logger.debug("[START]: httpd conf read :" + target_pod["metadata"]["name"])
-                        # result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "bash", "-c", "cat /etc/httpd/conf.d/exastroSettings/*.conf"], stderr=subprocess.STDOUT)
-                        # globals.logger.debug(result.decode('utf-8'))
-
                         # httpd -k gracefulコマンドの実行
                         globals.logger.debug("[START]: httpd graceful restart pod :" + target_pod["metadata"]["name"])
                         result = subprocess.check_output(["kubectl", "exec", "-i", "-n", namespace, target_pod["metadata"]["name"], "--", "httpd", "-k", "graceful"], stderr=subprocess.STDOUT)
