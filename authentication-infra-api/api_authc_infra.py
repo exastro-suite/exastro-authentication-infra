@@ -331,6 +331,7 @@ def post_client(realm):
         client_id = payload["client_id"]
         client_secret = client_secret_id
         backend_url = payload["backend_url"]
+        require_claim = payload["require_claim"]
 
         cm_name = os.environ["GATEWAY_HTTPD_CONF_CM_NAME"]
         cm_namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
@@ -354,6 +355,7 @@ def post_client(realm):
                     client_id,
                     client_secret,
                     backend_url,
+                    require_claim,
                 )
 
                 # Move to the configuration file directory - 設定ファイルディレクトリに移動
