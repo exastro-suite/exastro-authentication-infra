@@ -258,6 +258,7 @@ def post_client(realm):
         gw_namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         gw_deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
         client_port = api_httpd_call.create_nodeport(template_path, client_id, gw_namespace, gw_deploy_name)
+        mapping_client_id = payload["mapping_client_id"]
 
         # *-*-*-*-*-*-*-*
         #  keycloak 設定
@@ -281,19 +282,19 @@ def post_client(realm):
             "baseUrl": "{}://{}:{}/".format(client_redirect_protocol, client_redirect_host, client_port),
             "webOrigins": [],
             "protocolMappers": [
-                {
-                    "name": "{}-map-role".format(client_namespace),
-                    "protocol": "openid-connect",
-                    "protocolMapper": "oidc-usermodel-realm-role-mapper",
-                    "consentRequired": False,
-                    "config": {
-                        "id.token.claim": True,
-                        "access.token.claim": True,
-                        "claim.name": "epoch-role",
-                        "multivalued": True,
-                        "userinfo.token.claim": True,
-                    }
-                },
+                # {
+                #     "name": "{}-map-role".format(client_namespace),
+                #     "protocol": "openid-connect",
+                #     "protocolMapper": "oidc-usermodel-realm-role-mapper",
+                #     "consentRequired": False,
+                #     "config": {
+                #         "id.token.claim": True,
+                #         "access.token.claim": True,
+                #         "claim.name": "epoch-role",
+                #         "multivalued": True,
+                #         "userinfo.token.claim": True,
+                #     }
+                # },
                 {
                     "name": "{}-client-map-role".format(client_namespace),
                     "protocol": "openid-connect",
@@ -304,7 +305,7 @@ def post_client(realm):
                         "claim.name": "epoch-role",
                         "multivalued": True,
                         "userinfo.token.claim": True,
-                        "usermodel.clientRoleMapping.clientId": client_namespace
+                        "usermodel.clientRoleMapping.clientId": mapping_client_id
                     }
                 },
             ],
