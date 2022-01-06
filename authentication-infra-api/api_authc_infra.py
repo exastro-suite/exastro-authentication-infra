@@ -294,18 +294,19 @@ def post_client(realm):
                         "userinfo.token.claim": True,
                     }
                 },
-                # {
-                #     "name": "epoch-system-client-map-role",
-                #     "protocolMapper": "oidc-usermodel-client-role-mapper",
-                #     "consentRequired": False,
-                #     "config": {
-                #         "id.token.claim": True,
-                #         "access.token.claim": True,
-                #         "claim.name": "epoch-role",
-                #         "multivalued": True,
-                #         "userinfo.token.claim": True,
-                #     }
-                # },
+                {
+                    "name": "{}-client-map-role".format(client_namespace),
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-client-role-mapper",
+                    "config": {
+                        "id.token.claim": True,
+                        "access.token.claim": True,
+                        "claim.name": "epoch-role",
+                        "multivalued": True,
+                        "userinfo.token.claim": True,
+                        "usermodel.clientRoleMapping.clientId": client_namespace
+                    }
+                },
             ],
         }
 
