@@ -282,19 +282,6 @@ def post_client(realm):
             "baseUrl": "{}://{}:{}/".format(client_redirect_protocol, client_redirect_host, client_port),
             "webOrigins": [],
             "protocolMappers": [
-                # {
-                #     "name": "{}-map-role".format(client_namespace),
-                #     "protocol": "openid-connect",
-                #     "protocolMapper": "oidc-usermodel-realm-role-mapper",
-                #     "consentRequired": False,
-                #     "config": {
-                #         "id.token.claim": True,
-                #         "access.token.claim": True,
-                #         "claim.name": "epoch-role",
-                #         "multivalued": True,
-                #         "userinfo.token.claim": True,
-                #     }
-                # },
                 {
                     "name": "{}-client-map-role".format(client_namespace),
                     "protocol": "openid-connect",
