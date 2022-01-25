@@ -492,7 +492,13 @@ def call_refresh_session_js():
                             resolve();
                             return;
                         }
-                    } catch(e) {}
+                    } catch(e) { }
+                    try {
+                        const access_test = ifra.contentWindow.location;
+                    } catch(e) {
+                        reject();
+                        return;
+                    }
                     setTimeout(is_finish, 200);
                 }
                 is_finish();
