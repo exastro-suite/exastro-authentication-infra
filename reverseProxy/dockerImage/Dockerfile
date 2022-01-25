@@ -20,8 +20,10 @@ WORKDIR /app
 
 COPY    httpd-start.sh /app/
 COPY    exastroSettingsBridge.conf /app/
+COPY    epochGitlabProxy.conf /app/
 
 RUN     chmod +x /app/httpd-start.sh \
-&&      cp /app/exastroSettingsBridge.conf /etc/httpd/conf.d/.
+&&      cp /app/exastroSettingsBridge.conf /etc/httpd/conf.d/. \
+&&      cp /app/epochGitlabProxy.conf /etc/httpd/conf.d/.
 
 CMD ["/bin/sh","/app/httpd-start.sh"]
