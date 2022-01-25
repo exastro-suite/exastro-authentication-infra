@@ -120,7 +120,8 @@ def curret_user_password_change():
         user_info = api_keycloak_call.keycloak_user_get_by_id(realm_name, user_id, token_user, token_password, token_realm_name)
 
         # 1件目使用 first data only use
-        user_info = user_info[0]
+        if 0 in user_info:
+            user_info = user_info[0]
 
         # client_secretの取得
         client_secret = api_keycloak_call.keycloak_client_secret_get(realm_name, client_name, token_user, token_password, token_realm_name)

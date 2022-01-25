@@ -509,7 +509,7 @@ def call_refresh_session():
         Response: HTTP Respose
     """
     response = redirect('/user/refreshed_session')
-    response.set_cookie('mod_auth_openidc_session', value="", path='/', secure=True, httponly=True)
+    response.set_cookie('mod_auth_openidc_session', value="", path='/', secure=True, httponly=True, expires=0)
     return response
 
 @app.route('/user/refreshed_session',methods=['GET'])
