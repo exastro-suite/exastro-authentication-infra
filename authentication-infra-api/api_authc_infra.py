@@ -514,7 +514,7 @@ def call_refresh_session():
     Returns:
         Response: HTTP Respose
     """
-    response = redirect('/user/refreshed_session')
+    response = redirect('refreshed_session')
     response.set_cookie('mod_auth_openidc_session', value="", path='/', secure=True, httponly=True, expires=0)
     return response
 
