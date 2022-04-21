@@ -567,7 +567,7 @@ def keycloak_default_group_setting(realm_name, default_group_name, token_user, t
         globals.logger.debug(traceback.format_exc())
         raise
 
-def keycloak_user_create(realm_name, user_name, user_password, groups, realm_roles, user_opt, token_user, token_password, token_realm_name):
+def keycloak_user_create(realm_name, user_name, user_password, groups, realm_roles, user_opt, token_user, token_password, token_realm_name, pw_temporary=True):
     """ユーザ作成
 
     Args:
@@ -580,6 +580,7 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
         toekn_user (str): token 取得用 user name
         toekn_password (str): token 取得用 user password
         toekn_realm_name (str): token 取得用 realm name
+        pw_temporary (bool): first password temporary boolean
 
     Returns:
         Response: HTTP Respose
@@ -598,6 +599,7 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
         credentials = {
             "type": "password",
             "value": "{}".format(user_password),
+            "temporary": pw_temporary,
         }
 
         data_para = {
