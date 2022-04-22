@@ -105,6 +105,9 @@ def post_settings():
         cm_namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
 
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
         # realm作成
         try:
             api_keycloak_call.keycloak_realm_create(realm_name, realm_opt, token_user, token_password, token_realm_name)
@@ -117,6 +120,24 @@ def post_settings():
         for role in realm_roles:
             try:
                 api_keycloak_call.keycloak_realm_role_create(realm_name, role, token_user, token_password, token_realm_name)
+            except Exception as e:
+                globals.logger.debug(e.args)
+                raise
+
+        # clinet作成(指定clients数分処理)
+        for client_idx, client in enumerate(clients):
+
+            # client作成&client mapper作成
+            try:
+                client_secret_id = api_keycloak_call.client_create(realm_name, client["client_info"], token_user, token_password, token_realm_name)
+
+                clients[client_idx]["client_secret_id"] = client_secret_id
+
+                for client_role in client["client_roles"]:
+                    # client role作成
+                    # Create client role
+                    api_keycloak_call.keycloak_client_role_create(realm_name, client["client_info"]["id"], client_role, token)
+
             except Exception as e:
                 globals.logger.debug(e.args)
                 raise
@@ -142,12 +163,22 @@ def post_settings():
                     raise
 
         # group mapping作成(指定グループマッピング数分処理)
-        for mappings in group_mappings:
-            try:
-                api_keycloak_call.keycloak_group_add_role_mapping(realm_name, mappings["role_name"], mappings["group_name"], token_user, token_password, token_realm_name)
-            except Exception as e:
-                globals.logger.debug(e.args)
-                raise
+        try:
+            # realm role mappingsがある場合は、realmのrole mappingを登録する
+            # If you have realm role mappings, register realm role mappings
+            if "realm_role_mappings" in group_mappings:
+                for role_mapping in group_mappings["realm_role_mappings"]:
+                    api_keycloak_call.keycloak_group_add_role_mapping(realm_name, role_mapping["role_name"], role_mapping["group_name"], token_user, token_password, token_realm_name)
+
+            # client role mappingsがある場合は、clientのrole mappingを登録する
+            # If you have client role mappings, register client role mappings
+            if "clients_role_mappings" in group_mappings:
+                for client_mapping in group_mappings["clients_role_mappings"]:
+                    api_keycloak_call.keycloak_group_add_client_role_mapping(realm_name, client_mapping["role_name"], client_mapping["client_id"], client_mapping["group_name"], token_user, token_password, token_realm_name)
+
+        except Exception as e:
+            globals.logger.debug(e.args)
+            raise
 
         # default group設定
         try:
@@ -165,9 +196,6 @@ def post_settings():
                 # globals.logger.debug(f"add_user:{ret_user}")
                 user_id = ret_user[0]["id"]
                 
-                # tokenの取得 get toekn 
-                token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
-
                 # user client rolesの設定がある場合
                 # If there is a user client roles setting
                 if "client_roles" in user:
@@ -215,16 +243,9 @@ def post_settings():
         # clinet作成(指定clients数分処理)
         for client_info in clients:
 
-            # client作成&client mapper作成
-            try:
-                client_secret_id = api_keycloak_call.client_create(realm_name, client_info, token_user, token_password, token_realm_name)
-
-            except Exception as e:
-                globals.logger.debug(e.args)
-                raise
-
-            client_namespace = client_info["id"]
-            ret_url = urlparse(client_info["baseUrl"])
+            client_secret_id = client_info["client_secret_id"]
+            client_namespace = client_info["client_info"]["id"]
+            ret_url = urlparse(client_info["client_info"]["baseUrl"])
             client_redirect_host = ret_url.hostname
             client_redirect_port = ret_url.port
             conf_file_name = client_namespace + ".conf"
