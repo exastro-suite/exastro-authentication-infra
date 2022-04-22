@@ -159,7 +159,45 @@ def post_settings():
         # user作成(指定ユーザー数分処理)
         for user in users:
             try:
-                api_keycloak_call.keycloak_user_create(realm_name, user["user_name"], user["user_password"], user["user_groups"], user["user_realm_roles"], user["user_option"], token_user, token_password, token_realm_name)
+                api_keycloak_call.keycloak_user_create(realm_name, user["user_info"], token_user, token_password, token_realm_name)
+                
+                ret_user = api_keycloak_call.keycloak_user_get(realm_name, user["user_info"]["username"], token_user, token_password, token_realm_name)
+                # globals.logger.debug(f"add_user:{ret_user}")
+                user_id = ret_user[0]["id"]
+                
+                # tokenの取得 get toekn 
+                token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
+                # user client rolesの設定がある場合
+                # If there is a user client roles setting
+                if "client_roles" in user:
+                    # client単位のロール付与
+                    # Granting roles for each client
+                    for user_client_role in user["client_roles"]:
+                        params_conditions = {
+                            "clientId": user_client_role["client_name"]
+                        }
+                        # client idの取得 get client id
+                        ret_text = api_keycloak_call.keycloak_clients_get(realm_name, params_conditions, token)
+                        ret_json = json.loads(ret_text)
+                        client_id = ret_json[0]["id"]
+
+                        client_roles = []
+                        # ロール名からロールＩＤを取得する
+                        # Get the role ID from the role name
+                        for role in user_client_role["roles"]:
+                            ret_text = api_keycloak_call.keycloak_client_role_get(realm_name, client_id, role, token)
+                            ret_json = json.loads(ret_text)
+                            # globals.logger.debug(f"ret_json:{ret_json}")
+                            client_role = {
+                                "id": ret_json["id"],
+                                "name": role,
+                            }
+                            client_roles.append(client_role)
+                        
+                        # user client role mapping作成 user client role mapping generate
+                        api_keycloak_call.keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, client_roles, token)
+
             except Exception as e:
                 globals.logger.debug(e.args)
                 raise
@@ -167,7 +205,7 @@ def post_settings():
         # admin user作成(指定ユーザー数分処理)
         for admin_user in admin_users:
             try:
-                api_keycloak_call.keycloak_user_create("master", admin_user["user_name"], admin_user["user_password"], admin_user["user_groups"], admin_user["user_realm_roles"], admin_user["user_option"], token_user, token_password, token_realm_name)
+                api_keycloak_call.keycloak_user_create("master", admin_user["user_info"], token_user, token_password, token_realm_name)
                 # admin user role mapping作成
                 api_keycloak_call.keycloak_admin_user_role_mapping_create("master", "admin", admin_user["user_name"], token_user, token_password, token_realm_name)
             except Exception as e:
