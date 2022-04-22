@@ -567,20 +567,15 @@ def keycloak_default_group_setting(realm_name, default_group_name, token_user, t
         globals.logger.debug(traceback.format_exc())
         raise
 
-def keycloak_user_create(realm_name, user_name, user_password, groups, realm_roles, user_opt, token_user, token_password, token_realm_name, pw_temporary=True):
+def keycloak_user_create(realm_name, user_info, token_user, token_password, token_realm_name):
     """ユーザ作成
 
     Args:
         realm_name (str): realm name
-        user_name (str): user name
-        user_password (str): user password
-        groups (str array): group array
-        realm_roles (str array): realm_roles array
-        user_opt (dict): user parameter option
+        user_info (dic): user infomation
         toekn_user (str): token 取得用 user name
         toekn_password (str): token 取得用 user password
         toekn_realm_name (str): token 取得用 realm name
-        pw_temporary (bool): first password temporary boolean
 
     Returns:
         Response: HTTP Respose
@@ -588,7 +583,7 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
 
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL keycloak_user_create: realm_name:{}, user_name:{}'.format(realm_name, user_name))
+        globals.logger.debug('CALL keycloak_user_create: realm_name:{}, user_name:{}'.format(realm_name, user_info["username"]))
         globals.logger.debug('------------------------------------------------------')
 
         header_para = {
@@ -596,41 +591,31 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
             "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
         }
 
-        credentials = {
-            "type": "password",
-            "value": "{}".format(user_password),
-            "temporary": pw_temporary,
-        }
-
-        data_para = {
-            "username": user_name,
-            "groups": groups,
-            "realmRoles": realm_roles,
-            "credentials": [ credentials ],
-        }
-
-        # その他のオプション値はすべてそのまま受け渡す
-        if user_opt is not None:
-            for key in user_opt.keys():
-                data_para[key] = user_opt[key]
+        # 引き継がれた情報をそのまま受け渡す
+        # Pass the inherited information as it is
+        data_para = user_info
 
         globals.logger.debug("user post送信")
         # 呼び出し先設定
+        # Call destination setting
         api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         globals.logger.debug(data_para)
 
         request_response = requests.post("{}/auth/admin/realms/{}/users".format(api_url, realm_name), headers=header_para, data=json.dumps(data_para))
 
-        globals.logger.debug(request_response.text)
+        # globals.logger.debug(request_response.text)
 
-        # 取得できない場合は、Exceptionを発行する
+        # 作成できない場合は、Exceptionを発行する
+        # If it cannot be created, issue an Exception
         if request_response.status_code != 201:
+            globals.logger.error(request_response.text)
             raise Exception("user_create error status:{}, response:{}".format(request_response.status_code, request_response.text))
 
         globals.logger.debug("user create Succeed!")
 
         # 正常応答
+        # Normal respons
         return request_response.text
 
     except Exception as e:

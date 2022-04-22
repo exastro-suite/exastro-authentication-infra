@@ -159,9 +159,9 @@ def post_settings():
         # user作成(指定ユーザー数分処理)
         for user in users:
             try:
-                ret_user = api_keycloak_call.keycloak_user_create(realm_name, user["user_name"], user["user_password"], user["user_groups"], user["user_realm_roles"], user["user_option"], token_user, token_password, token_realm_name)
+                api_keycloak_call.keycloak_user_create(realm_name, user["user_info"], token_user, token_password, token_realm_name)
                 
-                ret_user = api_keycloak_call.keycloak_user_get(realm_name, user["user_name"], token_user, token_password, token_realm_name)
+                ret_user = api_keycloak_call.keycloak_user_get(realm_name, user["user_info"]["username"], token_user, token_password, token_realm_name)
                 # globals.logger.debug(f"add_user:{ret_user}")
                 user_id = ret_user[0]["id"]
                 
@@ -170,10 +170,10 @@ def post_settings():
 
                 # user client rolesの設定がある場合
                 # If there is a user client roles setting
-                if "user_client_roles" in user:
+                if "client_roles" in user:
                     # client単位のロール付与
                     # Granting roles for each client
-                    for user_client_role in user["user_client_roles"]:
+                    for user_client_role in user["client_roles"]:
                         params_conditions = {
                             "clientId": user_client_role["client_name"]
                         }
@@ -205,7 +205,7 @@ def post_settings():
         # admin user作成(指定ユーザー数分処理)
         for admin_user in admin_users:
             try:
-                api_keycloak_call.keycloak_user_create("master", admin_user["user_name"], admin_user["user_password"], admin_user["user_groups"], admin_user["user_realm_roles"], admin_user["user_option"], token_user, token_password, token_realm_name)
+                api_keycloak_call.keycloak_user_create("master", admin_user["user_info"], token_user, token_password, token_realm_name)
                 # admin user role mapping作成
                 api_keycloak_call.keycloak_admin_user_role_mapping_create("master", "admin", admin_user["user_name"], token_user, token_password, token_realm_name)
             except Exception as e:
