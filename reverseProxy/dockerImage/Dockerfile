@@ -1,5 +1,7 @@
 FROM    centos:7
 
+# TEST
+
 ARG     PROXY=""
 RUN     if [ ! -z "${PROXY}" ]; then \
           sed -i -e "$ a PROXY=${PROXY}" /etc/yum.conf; \
