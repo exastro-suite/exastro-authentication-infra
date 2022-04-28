@@ -161,14 +161,14 @@ def keycloak_realm_role_get(realm_name, role_name, token_user, token_password, t
             "Content-Type": "application/json",
             "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm)),
         }
-        data_para = {
+        params = {
             "search": role_name,
         }
         globals.logger.debug("role get送信")
         # 呼び出し先設定
         api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
-        globals.logger.debug(data_para)
-        request_response = requests.get("{}/auth/admin/realms/{}/roles/".format(api_url, realm_name), headers=header_para, data=data_para)
+        globals.logger.debug(params)
+        request_response = requests.get("{}/auth/admin/realms/{}/roles/".format(api_url, realm_name), headers=header_para, params=params)
         globals.logger.debug(request_response.text)
         # 取得できない場合は、Exceptionを発行する
         if request_response.status_code != 200:
@@ -522,6 +522,70 @@ def keycloak_group_add_role_mapping(realm_name, role_name, group_name, token_use
         globals.logger.debug(traceback.format_exc())
         raise
 
+
+def keycloak_group_add_client_role_mapping(realm_name, role_name, client_id, group_name, token_user, token_password, token_realm):
+    """グループクライアントロールマッピング作成 Create group client role mapping
+    Args:
+        realm_name (str): realm name
+        group_name (str): group name
+        client_id (str): client id
+        role_name (str): role name
+        token_user (str): token user name
+        token_password (str): token user password
+        token_realm (str): token realm name
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('-' * 50)
+        globals.logger.debug('CALL {} group_name:{}, role_name:{}, client_id:{}'.format(inspect.currentframe().f_code.co_name, group_name, role_name, client_id))
+        globals.logger.debug('-' * 50)
+
+        token = get_user_token(token_user, token_password, token_realm)
+
+        # group情報取得
+        group_info = keycloak_group_get(realm_name, group_name, token_user, token_password, token_realm)
+        globals.logger.debug(f"group_info:{group_info}")
+
+        # role情報取得
+        role_info = keycloak_client_role_get(realm_name, client_id, role_name, token)
+        role_info = json.loads(role_info)
+        globals.logger.debug(f"role_info:{role_info}")
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        data_para = [
+            {
+                "name": role_info["name"],
+                "id": role_info["id"],
+            }
+        ]
+
+        globals.logger.debug("groups client-role-mappings post送信")
+        # 呼び出し先設定
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+        globals.logger.debug(data_para)
+
+        request_response = requests.post("{}/auth/admin/realms/{}/groups/{}/role-mappings/clients/{}".format(api_url, realm_name, group_info['id'], client_id), headers=header_para, data=json.dumps(data_para))
+        globals.logger.debug(request_response.text)
+
+        # 取得できない場合は、Exceptionを発行する
+        if request_response.status_code != 204:
+            raise Exception("group client-role-mappings create error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        globals.logger.debug("group client-role-mappings add Succeed!")
+
+        # 正常応答
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
 def keycloak_default_group_setting(realm_name, default_group_name, token_user, token_password, token_realm):
     """デフォルトグループ設定
     Args:
@@ -567,16 +631,12 @@ def keycloak_default_group_setting(realm_name, default_group_name, token_user, t
         globals.logger.debug(traceback.format_exc())
         raise
 
-def keycloak_user_create(realm_name, user_name, user_password, groups, realm_roles, user_opt, token_user, token_password, token_realm_name):
+def keycloak_user_create(realm_name, user_info, token_user, token_password, token_realm_name):
     """ユーザ作成
 
     Args:
         realm_name (str): realm name
-        user_name (str): user name
-        user_password (str): user password
-        groups (str array): group array
-        realm_roles (str array): realm_roles array
-        user_opt (dict): user parameter option
+        user_info (dic): user infomation
         toekn_user (str): token 取得用 user name
         toekn_password (str): token 取得用 user password
         toekn_realm_name (str): token 取得用 realm name
@@ -587,7 +647,7 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
 
     try:
         globals.logger.debug('------------------------------------------------------')
-        globals.logger.debug('CALL keycloak_user_create: realm_name:{}, user_name:{}'.format(realm_name, user_name))
+        globals.logger.debug('CALL keycloak_user_create: realm_name:{}, user_name:{}'.format(realm_name, user_info["username"]))
         globals.logger.debug('------------------------------------------------------')
 
         header_para = {
@@ -595,40 +655,31 @@ def keycloak_user_create(realm_name, user_name, user_password, groups, realm_rol
             "Authorization": "Bearer {}".format(get_user_token(token_user, token_password, token_realm_name)),
         }
 
-        credentials = {
-            "type": "password",
-            "value": "{}".format(user_password),
-        }
-
-        data_para = {
-            "username": user_name,
-            "groups": groups,
-            "realmRoles": realm_roles,
-            "credentials": [ credentials ],
-        }
-
-        # その他のオプション値はすべてそのまま受け渡す
-        if user_opt is not None:
-            for key in user_opt.keys():
-                data_para[key] = user_opt[key]
+        # 引き継がれた情報をそのまま受け渡す
+        # Pass the inherited information as it is
+        data_para = user_info
 
         globals.logger.debug("user post送信")
         # 呼び出し先設定
+        # Call destination setting
         api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
 
         globals.logger.debug(data_para)
 
         request_response = requests.post("{}/auth/admin/realms/{}/users".format(api_url, realm_name), headers=header_para, data=json.dumps(data_para))
 
-        globals.logger.debug(request_response.text)
+        # globals.logger.debug(request_response.text)
 
-        # 取得できない場合は、Exceptionを発行する
+        # 作成できない場合は、Exceptionを発行する
+        # If it cannot be created, issue an Exception
         if request_response.status_code != 201:
+            globals.logger.error(request_response.text)
             raise Exception("user_create error status:{}, response:{}".format(request_response.status_code, request_response.text))
 
         globals.logger.debug("user create Succeed!")
 
         # 正常応答
+        # Normal respons
         return request_response.text
 
     except Exception as e:
@@ -989,6 +1040,49 @@ def keycloak_client_create(realm_name, client, token_user, token_password, token
         globals.logger.debug("client create Succeed!")
 
         # 正常応答
+        return request_response.text
+
+    except Exception as e:
+        globals.logger.debug(e.args)
+        globals.logger.debug(traceback.format_exc())
+        raise
+
+
+def keycloak_clients_get(realm_name, params, token):
+    """client作成
+    Args:
+        realm_name (str): realm name
+        params (dic): params (条件) conditions
+        toekn (str): token
+    Returns:
+        Response: HTTP Respose
+    """
+
+    try:
+        globals.logger.debug('------------------------------------------------------')
+        globals.logger.debug('CALL {}: params[{}]'.format(inspect.currentframe().f_code.co_name, params))
+        globals.logger.debug('------------------------------------------------------')
+
+        # 呼び出し先設定 Call destination setting
+        api_url = "{}://{}:{}".format(os.environ['API_KEYCLOAK_PROTOCOL'], os.environ['API_KEYCLOAK_HOST'], os.environ['API_KEYCLOAK_PORT'])
+
+        header_para = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token),
+        }
+
+        globals.logger.debug("clients get")
+
+        # Client get
+        request_response = requests.get("{}/auth/admin/realms/{}/clients".format(api_url, realm_name), headers=header_para, params=params)
+        globals.logger.debug(request_response)
+        
+        # 取得できない場合は、Exceptionを発行する If it cannot be obtained, an Exception will be thrown.
+        if request_response.status_code != 200:
+            raise Exception("clients_get error status:{}, response:{}".format(request_response.status_code, request_response.text))
+        globals.logger.debug("clients get Succeed!")
+
+        # 正常応答 Normal response
         return request_response.text
 
     except Exception as e:
