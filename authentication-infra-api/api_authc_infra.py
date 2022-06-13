@@ -105,6 +105,9 @@ def post_settings():
         cm_namespace = os.environ["EXASTRO_AUTHC_NAMESPACE"]
         deploy_name = os.environ["GATEWAY_HTTPD_DEPLOY_NAME"]
 
+        # tokenの取得 get toekn 
+        token = api_keycloak_call.get_user_token(token_user, token_password, token_realm_name)
+
         # realm作成
         try:
             api_keycloak_call.keycloak_realm_create(realm_name, realm_opt, token_user, token_password, token_realm_name)
@@ -117,6 +120,24 @@ def post_settings():
         for role in realm_roles:
             try:
                 api_keycloak_call.keycloak_realm_role_create(realm_name, role, token_user, token_password, token_realm_name)
+            except Exception as e:
+                globals.logger.debug(e.args)
+                raise
+
+        # clinet作成(指定clients数分処理)
+        for client_idx, client in enumerate(clients):
+
+            # client作成&client mapper作成
+            try:
+                client_secret_id = api_keycloak_call.client_create(realm_name, client["client_info"], token_user, token_password, token_realm_name)
+
+                clients[client_idx]["client_secret_id"] = client_secret_id
+
+                for client_role in client["client_roles"]:
+                    # client role作成
+                    # Create client role
+                    api_keycloak_call.keycloak_client_role_create(realm_name, client["client_info"]["id"], client_role, token)
+
             except Exception as e:
                 globals.logger.debug(e.args)
                 raise
@@ -142,12 +163,22 @@ def post_settings():
                     raise
 
         # group mapping作成(指定グループマッピング数分処理)
-        for mappings in group_mappings:
-            try:
-                api_keycloak_call.keycloak_group_add_role_mapping(realm_name, mappings["role_name"], mappings["group_name"], token_user, token_password, token_realm_name)
-            except Exception as e:
-                globals.logger.debug(e.args)
-                raise
+        try:
+            # realm role mappingsがある場合は、realmのrole mappingを登録する
+            # If you have realm role mappings, register realm role mappings
+            if "realm_role_mappings" in group_mappings:
+                for role_mapping in group_mappings["realm_role_mappings"]:
+                    api_keycloak_call.keycloak_group_add_role_mapping(realm_name, role_mapping["role_name"], role_mapping["group_name"], token_user, token_password, token_realm_name)
+
+            # client role mappingsがある場合は、clientのrole mappingを登録する
+            # If you have client role mappings, register client role mappings
+            if "clients_role_mappings" in group_mappings:
+                for client_mapping in group_mappings["clients_role_mappings"]:
+                    api_keycloak_call.keycloak_group_add_client_role_mapping(realm_name, client_mapping["role_name"], client_mapping["client_id"], client_mapping["group_name"], token_user, token_password, token_realm_name)
+
+        except Exception as e:
+            globals.logger.debug(e.args)
+            raise
 
         # default group設定
         try:
@@ -159,7 +190,42 @@ def post_settings():
         # user作成(指定ユーザー数分処理)
         for user in users:
             try:
-                api_keycloak_call.keycloak_user_create(realm_name, user["user_name"], user["user_password"], user["user_groups"], user["user_realm_roles"], user["user_option"], token_user, token_password, token_realm_name)
+                api_keycloak_call.keycloak_user_create(realm_name, user["user_info"], token_user, token_password, token_realm_name)
+                
+                ret_user = api_keycloak_call.keycloak_user_get(realm_name, user["user_info"]["username"], token_user, token_password, token_realm_name)
+                # globals.logger.debug(f"add_user:{ret_user}")
+                user_id = ret_user[0]["id"]
+                
+                # user client rolesの設定がある場合
+                # If there is a user client roles setting
+                if "client_roles" in user:
+                    # client単位のロール付与
+                    # Granting roles for each client
+                    for user_client_role in user["client_roles"]:
+                        params_conditions = {
+                            "clientId": user_client_role["client_name"]
+                        }
+                        # client idの取得 get client id
+                        ret_text = api_keycloak_call.keycloak_clients_get(realm_name, params_conditions, token)
+                        ret_json = json.loads(ret_text)
+                        client_id = ret_json[0]["id"]
+
+                        client_roles = []
+                        # ロール名からロールＩＤを取得する
+                        # Get the role ID from the role name
+                        for role in user_client_role["roles"]:
+                            ret_text = api_keycloak_call.keycloak_client_role_get(realm_name, client_id, role, token)
+                            ret_json = json.loads(ret_text)
+                            # globals.logger.debug(f"ret_json:{ret_json}")
+                            client_role = {
+                                "id": ret_json["id"],
+                                "name": role,
+                            }
+                            client_roles.append(client_role)
+                        
+                        # user client role mapping作成 user client role mapping generate
+                        api_keycloak_call.keycloak_user_client_role_mapping_create(realm_name, user_id, client_id, client_roles, token)
+
             except Exception as e:
                 globals.logger.debug(e.args)
                 raise
@@ -167,7 +233,7 @@ def post_settings():
         # admin user作成(指定ユーザー数分処理)
         for admin_user in admin_users:
             try:
-                api_keycloak_call.keycloak_user_create("master", admin_user["user_name"], admin_user["user_password"], admin_user["user_groups"], admin_user["user_realm_roles"], admin_user["user_option"], token_user, token_password, token_realm_name)
+                api_keycloak_call.keycloak_user_create("master", admin_user["user_info"], token_user, token_password, token_realm_name)
                 # admin user role mapping作成
                 api_keycloak_call.keycloak_admin_user_role_mapping_create("master", "admin", admin_user["user_name"], token_user, token_password, token_realm_name)
             except Exception as e:
@@ -177,16 +243,9 @@ def post_settings():
         # clinet作成(指定clients数分処理)
         for client_info in clients:
 
-            # client作成&client mapper作成
-            try:
-                client_secret_id = api_keycloak_call.client_create(realm_name, client_info, token_user, token_password, token_realm_name)
-
-            except Exception as e:
-                globals.logger.debug(e.args)
-                raise
-
-            client_namespace = client_info["id"]
-            ret_url = urlparse(client_info["baseUrl"])
+            client_secret_id = client_info["client_secret_id"]
+            client_namespace = client_info["client_info"]["id"]
+            ret_url = urlparse(client_info["client_info"]["baseUrl"])
             client_redirect_host = ret_url.hostname
             client_redirect_port = ret_url.port
             conf_file_name = client_namespace + ".conf"
@@ -514,7 +573,7 @@ def call_refresh_session():
     Returns:
         Response: HTTP Respose
     """
-    response = redirect('/user/refreshed_session')
+    response = redirect('refreshed_session')
     response.set_cookie('mod_auth_openidc_session', value="", path='/', secure=True, httponly=True, expires=0)
     return response
 
@@ -701,4 +760,4 @@ def call_client_role_info(realm, client_id, role_name):
         return common.server_error(e)
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('API_AUTHC_INFRA_PORT', '8000')), threaded=True)
+    app.run(debug=eval(os.environ.get('API_DEBUG', "False")), host='0.0.0.0', port=int(os.environ.get('API_AUTHC_INFRA_PORT', '8000')), threaded=True)
